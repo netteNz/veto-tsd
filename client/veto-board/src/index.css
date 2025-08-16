@@ -1,0 +1,37 @@
+@import 'tailwindcss';
+
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  background-color: #0b1020;
+  /* deep dark */
+  color: #e6eef8;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* nicer scrollbars for the messages pane */
+.custom-scroll::-webkit-scrollbar {
+  width: 10px;
+}
+
+.custom-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scroll::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 9999px;
+  border: 3px solid transparent;
+  background-clip: padding-box;
+}
+
+/* small card shadow in dark */
+.shadow-lg {
+  box-shadow: 0 6px 18px rgba(2, 6, 23, 0.6);
+}
