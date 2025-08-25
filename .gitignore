@@ -1,0 +1,28 @@
+# OS / editor
+.DS_Store
+Thumbs.db
+
+# Python
+__pycache__/
+*.py[cod]
+*.sqlite3
+*.log
+
+# Virtual env / deps
+.venv/
+env/
+venv/
+pip-wheel-metadata/
+
+# Django / builds
+server/staticfiles/
+media/
+coverage/
+build/
+dist/
+
+# Node (in case anything lingers)
+node_modules/
+
+# MkDocs build (we deploy to gh-pages instead)
+site/
