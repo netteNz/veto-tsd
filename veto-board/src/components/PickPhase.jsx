@@ -41,44 +41,78 @@ export default function PickPhase({ series, onSuccess }) {
 
   // Game structure for TSD Bo7
   const gameStructure = [
-    { game: 1, type: "Objective", picker: "B" },
-    { game: 2, type: "Slayer", picker: "A" },
-    { game: 3, type: "Objective", picker: "B" },
-    { game: 4, type: "Objective", picker: "A" },
-    { game: 5, type: "Slayer", picker: "B" },
-    { game: 6, type: "Objective", picker: "A" },
-    { game: 7, type: "Slayer", picker: "B" }
+    { game: 1, type: "Objective", picker: "A" },
+    { game: 2, type: "Slayer", picker: "B" },
+    { game: 3, type: "Objective", picker: "A" },
+    { game: 4, type: "Objective", picker: "B" },
+    { game: 5, type: "Slayer", picker: "A" },
+    { game: 6, type: "Objective", picker: "B" },
+    { game: 7, type: "Slayer", picker: "A" }
   ];
 
   // Find current game to pick
-  const currentGame = gameStructure.find(game => {
+  const currentGame = gameStructure.find(g => {
     const existingPick = series.actions?.find(action => 
-      action.action_type === "PICK" && action.step === game.game
+      action.action_type === "PICK" && action.game === g.game
     );
     return !existingPick;
   });
 
+  console.debug("Current game to pick:", currentGame);
+  console.debug("Series team assignments:", { team_a: series.team_a, team_b: series.team_b });
+  console.debug("All series actions:", series.actions);
+
   if (!currentGame) {
-    return (
-      <div className="bg-gray-800 text-white p-6 rounded">
-        <h3 className="text-lg font-semibold text-green-400">All Games Picked!</h3>
-        <p className="text-gray-300">The series is ready to begin.</p>
-      </div>
-    );
+    return <div className="text-white">All games have been picked!</div>;
   }
 
-  const pickerTeam = currentGame.picker === "A" ? series.team_a : series.team_b;
   const isObjectiveGame = currentGame.type === "Objective";
+  const pickerTeam = currentGame.picker === "A" ? series.team_a : series.team_b;
+  console.debug("Picker team calculation:", { 
+    gamePicker: currentGame.picker, 
+    pickerTeam,
+    shouldPickTeamA: currentGame.picker === "A",
+    actualTeamA: series.team_a,
+    actualTeamB: series.team_b
+   });
 
   const handlePick = async (mapId, modeId = null) => {
+    console.debug("handlePick called with raw:", { mapId, modeId });
     setLoading(true);
     setError("");
 
     try {
       const endpoint = isObjectiveGame ? "pick_objective_combo" : "pick_slayer_map";
+
+      // validate map and mode for objective picks FIRST
+      const mapVal = mapId != null ? parseInt(mapId, 10) : NaN;
+      const modeVal = modeId != null ? parseInt(modeId, 10) : NaN;
+
+      // Use the picker letter directly since API expects "A" or "B", not team IDs
+      const teamValue = currentGame.picker; // "A" or "B"
+      console.debug("Sending pick request:", {
+        currentGame,
+        teamValue,
+        expectedPicker: currentGame.picker,
+        body: isObjectiveGame 
+          ? { team: teamValue, map: mapVal, mode: modeVal }
+          : { team: teamValue, map: mapVal }
+      });
+
+      if (!teamValue || Number.isNaN(mapVal) || (isObjectiveGame && Number.isNaN(modeVal))) {
+        const missing = [
+          !teamValue && "team",
+          Number.isNaN(mapVal) && "map",
+          isObjectiveGame && Number.isNaN(modeVal) && "mode"
+        ].filter(Boolean).join(", ");
+        throw new Error(`${missing} ${missing.includes(",") ? "are" : "is"} required`);
+      }
+
       const body = isObjectiveGame 
-        ? { team: currentGame.picker, map: parseInt(mapId), mode: parseInt(modeId) }
-        : { team: currentGame.picker, map: parseInt(mapId) };
+        ? { team: teamValue, map: mapVal, mode: modeVal }
+        : { team: teamValue, map: mapVal };
+      
+      console.debug("Picking payload:", body, "endpoint:", endpoint);
 
       const res = await fetch(`${API_BASE}/series/${series.id}/${endpoint}/`, {
         method: "POST",
@@ -91,7 +125,7 @@ export default function PickPhase({ series, onSuccess }) {
         throw new Error(errorData.detail || `Failed to pick map`);
       }
 
-      onSuccess();
+      onSuccess && onSuccess();
     } catch (err) {
       console.error("Pick failed:", err);
       setError(err.message);
@@ -100,13 +134,33 @@ export default function PickPhase({ series, onSuccess }) {
     }
   };
 
+  // normalization helpers
+  const pickObjective = (combo, modeId) => {
+    console.debug("pickObjective raw combo:", combo);
+    console.debug("pickObjective combo keys:", Object.keys(combo || {}));
+    const mapVal = combo.map_id ?? combo.map?.id ?? combo.map;
+    const modeVal = modeId; // pass mode ID from parent
+    console.debug("pickObjective normalized:", { mapVal, modeVal, combo });
+    handlePick(mapVal, modeVal);
+  };
+
+  const pickSlayer = (m) => {
+    const mapVal = m.id ?? m.pk ?? m.map_id ?? m;
+    console.debug("pickSlayer normalized:", { mapVal, m });
+    handlePick(mapVal);
+  };
+  
   // Get available maps based on game type
   const getAvailableMaps = () => {
     if (isObjectiveGame) {
       // For objective games, show grouped combos
-      return groupedCombos;
+      return groupedCombos.objective || [];
     } else {
       // For slayer games, show just slayer-compatible maps
+      // Use slayer combos from API or fallback to filtered maps
+      if (groupedCombos.slayer && groupedCombos.slayer.length > 0) {
+        return groupedCombos.slayer[0]?.combos || [];
+      }
       return maps.filter(map => 
         map.modes?.some(mode => mode.name === "Slayer")
       );
@@ -136,18 +190,18 @@ export default function PickPhase({ series, onSuccess }) {
         // Objective game picker - show mode/map combos
         <div className="space-y-4">
           <p className="text-gray-300">Select an objective mode/map combination:</p>
-          {Object.entries(availableMaps).map(([modeName, mapList]) => (
-            <div key={modeName} className="bg-gray-700 p-4 rounded">
-              <h4 className="font-semibold text-yellow-400 mb-3">{modeName}</h4>
+          {availableMaps.map((modeGroup) => (
+            <div key={modeGroup.mode_id} className="bg-gray-700 p-4 rounded">
+              <h4 className="font-semibold text-yellow-400 mb-3">{modeGroup.mode}</h4>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                {mapList.map(combo => (
+                {modeGroup.combos.map(combo => (
                   <button
-                    key={`${combo.mode_id}_${combo.map_id}`}
-                    onClick={() => handlePick(combo.map_id, combo.mode_id)}
+                    key={`${modeGroup.mode_id}_${combo.map_id}`}
+                    onClick={() => pickObjective(combo, modeGroup.mode_id)}
                     disabled={loading}
                     className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 px-3 py-2 rounded text-sm transition-colors"
                   >
-                    {combo.map_name}
+                    {combo.map}
                   </button>
                 ))}
               </div>
@@ -161,12 +215,12 @@ export default function PickPhase({ series, onSuccess }) {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             {availableMaps.map(map => (
               <button
-                key={map.id}
-                onClick={() => handlePick(map.id)}
+                key={map.map_id ?? map.id ?? map.pk}
+                onClick={() => pickSlayer(map)}
                 disabled={loading}
                 className="bg-green-600 hover:bg-green-700 disabled:opacity-50 px-4 py-3 rounded transition-colors"
               >
-                {map.name}
+                {map.map ?? map.name}
               </button>
             ))}
           </div>
