@@ -14,7 +14,7 @@ env/
 venv/
 pip-wheel-metadata/
 .env.development
-.env.production
+
 
 
 # Django / builds
