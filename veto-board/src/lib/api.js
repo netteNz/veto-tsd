@@ -1,4 +1,4 @@
-const API_BASE = "http://localhost:8000/api"; // change this if different
+const API_BASE = import.meta.env.VITE_API_BASE;
 
 export async function getSeries(id) {
   const res = await fetch(`${API_BASE}/series/${id}/`);
