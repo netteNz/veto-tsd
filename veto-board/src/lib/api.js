@@ -4,6 +4,9 @@ const API_BASE = import.meta.env.VITE_API_BASE;
 console.log("[DEBUG] Environment mode:", import.meta.env.MODE);
 console.log("[DEBUG] API_BASE from env:", API_BASE);
 
+// Export API_BASE so other components can use it
+export { API_BASE };
+
 export async function getSeries(id) {
   try {
     const res = await fetch(`${API_BASE}/series/${id}/`);

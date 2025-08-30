@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
-import { getGroupedCombos, getAllMaps } from "../lib/api";
+import { getGroupedCombos, getAllMaps, API_BASE } from "../lib/api";
 import AvailableCombos from "./AvailableCombos";
 
-// Import the API_BASE from the centralized api.js file
-const API_BASE = "http://localhost:8000/api";
+// Remove this line - you're already importing API_BASE above
+// const API_BASE = "http://localhost:8000/api";
 
 export default function SeriesLayout({ series, onSuccess }) {
   const [maps, setMaps] = useState({});
