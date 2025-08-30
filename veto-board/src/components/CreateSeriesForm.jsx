@@ -18,10 +18,19 @@ export default function CreateSeriesForm({ onCreated }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ team_a: teamA, team_b: teamB }),
       });
+      
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.detail || `HTTP ${res.status}: ${res.statusText}`);
+      }
+      
       const data = await res.json();
-      onCreated(data.id); // pass new seriesId to parent
+      // Handle both possible response structures
+      const seriesId = data.id || data.series_id || data;
+      onCreated(seriesId);
     } catch (err) {
-      setError("Failed to create series.");
+      console.error("Create series error:", err);
+      setError(err.message || "Failed to create series.");
     } finally {
       setLoading(false);
     }

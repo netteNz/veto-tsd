@@ -8,5 +8,10 @@ export default defineConfig({
     react(),
     tailwindcss(),
   ],
-  base: '/veto-tsd/'
+  base: '/veto-tsd/',
+  server: {
+    headers: {
+      'Permissions-Policy': 'browsing-topics=(), run-ad-auction=(), join-ad-interest-group=(), private-state-token-redemption=(), private-state-token-issuance=(), private-aggregation=(), attribution-reporting=()'
+    }
+  }
 });

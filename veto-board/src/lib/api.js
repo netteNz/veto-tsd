@@ -1,9 +1,19 @@
 const API_BASE = import.meta.env.VITE_API_BASE;
 
 export async function getSeries(id) {
-  const res = await fetch(`${API_BASE}/series/${id}/`);
-  if (!res.ok) throw new Error("Failed to fetch series");
-  return res.json();
+  try {
+    const res = await fetch(`${API_BASE}/series/${id}/`);
+    if (!res.ok) {
+      if (res.status === 404) {
+        throw new Error(`Series ${id} not found`);
+      }
+      throw new Error(`Failed to fetch series: ${res.status}`);
+    }
+    return res.json();
+  } catch (err) {
+    console.error(`[DEBUG] Get series ${id} failed:`, err);
+    throw err;
+  }
 }
 
 export async function getAllMaps() {
@@ -110,18 +120,24 @@ export async function postReset(id) {
   return res.json();
 }
 
-export async function createSeries() {
+export async function createSeries(teamA = "", teamB = "") {
   try {
+    const body = {};
+    if (teamA && teamB) {
+      body.team_a = teamA;
+      body.team_b = teamB;
+    }
+    
     const res = await fetch(`${API_BASE}/series/`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({})
+      body: JSON.stringify(body)
     });
     
     if (!res.ok) {
       const errorData = await res.json().catch(() => ({}));
       console.error("[DEBUG] Create series error:", errorData);
-      throw new Error(`Failed to create series: ${res.status} - ${errorData.detail || 'Unknown error'}`);
+      throw new Error(`Failed to create series: ${res.status} - ${errorData.detail || res.statusText}`);
     }
     
     return res.json();
