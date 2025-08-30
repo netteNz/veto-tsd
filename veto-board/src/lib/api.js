@@ -1,5 +1,9 @@
 const API_BASE = import.meta.env.VITE_API_BASE;
 
+// Add debugging at the top to see if API_BASE is loaded correctly
+console.log("[DEBUG] Environment mode:", import.meta.env.MODE);
+console.log("[DEBUG] API_BASE from env:", API_BASE);
+
 export async function getSeries(id) {
   try {
     const res = await fetch(`${API_BASE}/series/${id}/`);
@@ -128,11 +132,18 @@ export async function createSeries(teamA = "", teamB = "") {
       body.team_b = teamB;
     }
     
+    console.log("[DEBUG] Creating series with API_BASE:", API_BASE);
+    console.log("[DEBUG] Request URL:", `${API_BASE}/series/`);
+    console.log("[DEBUG] Request body:", JSON.stringify(body));
+    
     const res = await fetch(`${API_BASE}/series/`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body)
     });
+    
+    console.log("[DEBUG] Response status:", res.status);
+    console.log("[DEBUG] Response headers:", [...res.headers.entries()]);
     
     if (!res.ok) {
       const errorData = await res.json().catch(() => ({}));
