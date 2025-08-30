@@ -1,8 +1,11 @@
-const API_BASE = import.meta.env.VITE_API_BASE;
-
-// Add debugging at the top to see if API_BASE is loaded correctly
+// Add debugging at the top to see all environment variables
 console.log("[DEBUG] Environment mode:", import.meta.env.MODE);
-console.log("[DEBUG] API_BASE from env:", API_BASE);
+console.log("[DEBUG] All environment variables:", import.meta.env);
+console.log("[DEBUG] VITE_API_BASE specifically:", import.meta.env.VITE_API_BASE);
+
+const API_BASE = import.meta.env.VITE_API_BASE || "https://veto-webapp.onrender.com/api";
+
+console.log("[DEBUG] Final API_BASE value:", API_BASE);
 
 // Export API_BASE so other components can use it
 export { API_BASE };
