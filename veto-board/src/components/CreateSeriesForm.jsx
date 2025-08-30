@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { API_BASE } from "../lib/api";
 
 export default function CreateSeriesForm({ onCreated }) {
   const [teamA, setTeamA] = useState("");
@@ -12,7 +13,7 @@ export default function CreateSeriesForm({ onCreated }) {
     setError("");
 
     try {
-      const res = await fetch("http://localhost:8000/api/series/", {
+      const res = await fetch(`${API_BASE}/series/`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ team_a: teamA, team_b: teamB }),

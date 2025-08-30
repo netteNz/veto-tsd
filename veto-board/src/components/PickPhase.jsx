@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
-import { getGroupedCombos, getAllMaps } from "../lib/api";
+import { getGroupedCombos, getAllMaps, API_BASE } from "../lib/api";
 
-const API_BASE = "http://localhost:8000/api";
 
 export default function PickPhase({ series, onSuccess }) {
   const [maps, setMaps] = useState([]);
