@@ -3,7 +3,6 @@ import ComboPicker from "./ComboPicker";
 
 /**
  * Compute available objective combos and slayer maps after veto.
- * Option A: tag each item with `_status`, but only render "available".
  */
 export default function AvailableCombos({
   series = {},
@@ -13,12 +12,10 @@ export default function AvailableCombos({
   onPick,
   loading = false,
 }) {
-  // normalize action arrays
   const actions = series.actions ?? [];
   const bans = actions.filter((a) => a.action_type === "BAN");
   const picks = actions.filter((a) => a.action_type === "PICK");
 
-  // helper to extract map id from different shapes
   const mapIdFrom = (obj) =>
     obj?.map_id ?? obj?.map?.id ?? obj?.map ?? obj?.id ?? obj?.pk ?? obj;
 
@@ -40,56 +37,51 @@ export default function AvailableCombos({
     return s;
   }, [picks]);
 
-  // Flatten groupedCombos defensively (handles { modeName:[...] } shape)
-  const allObjectiveCombos = useMemo(() => {
-    if (!groupedCombos) return [];
-    if (Array.isArray(groupedCombos)) return groupedCombos;
+  // Build objective combos grouped by mode, skipping Slayer and empty groups
+  const availableObjectiveCombos = useMemo(() => {
+    if (!groupedCombos || Array.isArray(groupedCombos)) return [];
 
-    const all = [];
+    const groups = [];
     Object.entries(groupedCombos).forEach(([modeName, combos]) => {
-      if (Array.isArray(combos)) {
-        combos.forEach((combo) => {
-          all.push({ ...combo, _modeName: modeName });
-        });
+      if (!Array.isArray(combos)) return;
+      if (modeName.toLowerCase().includes("slayer")) return; // skip Slayer
+
+      const filtered = combos.filter((c) => {
+        const mid = mapIdFrom(c);
+        if (!mid) return false;
+        if (bannedMapIds.has(Number(mid))) return false;
+        if (pickedMapIds.has(Number(mid))) return false;
+        return true;
+      });
+
+      if (filtered.length > 0) {
+        groups.push({ mode: modeName, combos: filtered });
       }
     });
-    return all;
-  }, [groupedCombos]);
 
-  // Tag each combo with _status, but only surface "available"
-  const availableObjectiveCombos = useMemo(() => {
-    return allObjectiveCombos
-      .map((c) => {
-        const mid = mapIdFrom(c);
-        const banned = bannedMapIds.has(Number(mid));
-        const picked = pickedMapIds.has(Number(mid));
-        const _status = banned ? "banned" : picked ? "picked" : "available";
-        return { ...c, _status };
-      })
-      .filter((c) => c._status === "available");
-  }, [allObjectiveCombos, bannedMapIds, pickedMapIds]);
+    console.debug("AvailableCombos - objective groups:", groups);
+    return groups;
+  }, [groupedCombos, bannedMapIds, pickedMapIds]);
 
-  // Slayer: tag with _status, then keep only "available" that support Slayer
+  // Slayer: filter out banned/picked and non-slayer-support maps
   const availableSlayerMaps = useMemo(() => {
-    return (mapsList || [])
-      .map((m) => {
-        const mid = mapIdFrom(m);
-        const banned = bannedMapIds.has(Number(mid));
-        const picked = pickedMapIds.has(Number(mid));
-        const _status = banned ? "banned" : picked ? "picked" : "available";
-        return { ...m, _status };
-      })
-      .filter((m) => {
-        if (m._status !== "available") return false;
-        if (!m?.modes || !Array.isArray(m.modes)) return true; // fallback: keep
+    return (mapsList || []).filter((m) => {
+      const mid = mapIdFrom(m);
+      if (!mid) return false;
+      if (bannedMapIds.has(Number(mid))) return false;
+      if (pickedMapIds.has(Number(mid))) return false;
+
+      if (m.modes && Array.isArray(m.modes)) {
         return m.modes.some(
           (mode) =>
-            (typeof mode === "string" &&
-              mode.toLowerCase().includes("slayer")) ||
+            (typeof mode === "string" && mode.toLowerCase().includes("slayer")) ||
             (typeof mode === "object" &&
-              mode?.name?.toLowerCase().includes("slayer"))
+              mode.name &&
+              mode.name.toLowerCase().includes("slayer"))
         );
-      });
+      }
+      return true;
+    });
   }, [mapsList, bannedMapIds, pickedMapIds]);
 
   return (
