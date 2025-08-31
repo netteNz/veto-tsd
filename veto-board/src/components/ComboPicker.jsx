@@ -2,38 +2,48 @@ import React from "react";
 
 /**
  * Renders objective combos and slayer map buttons and calls onPick(mapId, modeId?)
+ * Option A: buttons are colored by `_status` if present, but only "available" arrive here.
  */
-export default function ComboPicker({ objectiveCombos = [], slayerMaps = [], onPick, loading = false }) {
+export default function ComboPicker({
+  objectiveCombos = [],
+  slayerMaps = [],
+  onPick,
+  loading = false,
+}) {
   const normMapId = (m) => {
-    // Handle different data structures
     if (m?.map_id) return m.map_id;
     if (m?.map?.id) return m.map.id;
-    if (m?.map) return m.map; // if map is just the ID
+    if (m?.map) return m.map; // map is just the ID
     if (m?.id) return m.id;
     if (m?.pk) return m.pk;
     return m;
   };
 
   const normModeId = (c) => {
-    // Handle different data structures  
     if (c?.mode_id) return c.mode_id;
     if (c?.mode?.id) return c.mode.id;
-    if (c?.mode) return c.mode; // if mode is just the ID
+    if (c?.mode) return c.mode; // mode is just the ID
     if (c?.modeId) return c.modeId;
     return null;
   };
 
   const mapLabel = (c) => {
-    // Try different property paths for map name
     if (c?.map_name) return c.map_name;
     if (c?.mapName) return c.mapName;
     if (c?.map?.name) return c.map.name;
     if (c?.map?.map_name) return c.map.map_name;
-    if (typeof c?.map === 'string') return c.map;
-    
-    // Fallback to map id
+    if (typeof c?.map === "string") return c.map;
+
     const mapId = normMapId(c);
-    return mapId ? `Map ${mapId}` : 'Unknown Map';
+    return mapId ? `Map ${mapId}` : "Unknown Map";
+  };
+
+  const clsByStatus = (base, status) => {
+    if (status === "picked")
+      return `${base} bg-purple-700 hover:bg-purple-700 cursor-not-allowed`;
+    if (status === "banned")
+      return `${base} bg-red-800 hover:bg-red-800 cursor-not-allowed`;
+    return base; // available
   };
 
   return (
@@ -45,23 +55,16 @@ export default function ComboPicker({ objectiveCombos = [], slayerMaps = [], onP
             {objectiveCombos.map((combo, idx) => {
               const mapId = normMapId(combo);
               const modeId = normModeId(combo);
-              console.debug("Combo debug:", { 
-                combo, 
-                mapId, 
-                modeId, 
-                label: mapLabel(combo),
-                comboKeys: Object.keys(combo || {})
-              });
-              
+              const status = combo?._status || "available";
               return (
                 <button
                   key={`${mapId}-${modeId}-${idx}`}
-                  onClick={() => {
-                    console.debug("Clicking combo:", { mapId, modeId, combo });
-                    onPick && onPick(mapId, modeId);
-                  }}
-                  disabled={loading || !mapId || !modeId}
-                  className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 px-3 py-2 rounded text-sm"
+                  onClick={() => onPick && onPick(mapId, modeId)}
+                  disabled={loading || !mapId || !modeId || status !== "available"}
+                  className={clsByStatus(
+                    "px-3 py-2 rounded text-sm disabled:opacity-50 bg-blue-600 hover:bg-blue-700",
+                    status
+                  )}
                 >
                   {mapLabel(combo)}
                 </button>
@@ -78,19 +81,20 @@ export default function ComboPicker({ objectiveCombos = [], slayerMaps = [], onP
             {slayerMaps.map((m, idx) => {
               const mapId = normMapId(m);
               const label = m?.name ?? m?.map_name ?? String(mapId);
+              const status = m?._status || "available";
               return (
                 <button
                   key={`${mapId}-${idx}`}
-                  onClick={() => {
-                    console.debug("Clicking slayer map:", { mapId, m });
-                    onPick && onPick(mapId, null);
-                  }}
-                  disabled={loading || !mapId}
-                  className="bg-green-600 hover:bg-green-700 disabled:opacity-50 px-4 py-2 rounded text-sm"
+                  onClick={() => onPick && onPick(mapId, null)}
+                  disabled={loading || !mapId || status !== "available"}
+                  className={clsByStatus(
+                    "px-4 py-2 rounded text-sm disabled:opacity-50 bg-green-600 hover:bg-green-700",
+                    status
+                  )}
                 >
                   {label}
                 </button>
-                );
+              );
             })}
           </div>
         </div>

@@ -1,6 +1,5 @@
 import { useEffect, useState, useRef } from "react";
 import SeriesManager from "./components/SeriesManager";
-import MapList from "./components/MapList";
 import { createSeries } from "./lib/api";
 import "./index.css";
 
@@ -67,7 +66,6 @@ function App() {
       ) : (
         <>
           <SeriesManager seriesId={seriesId} />
-          {import.meta.env.DEV && <MapList />}
         </>
       )}
     </div>
