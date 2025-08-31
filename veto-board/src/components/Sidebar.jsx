@@ -17,7 +17,7 @@ const NAV_ITEMS = [
   // Add more later: { label: "Analytics", to: "/analytics", icon: Gauge }
 ];
 
-function classNames(...parts: Array<string | false | null | undefined>) {
+function classNames(...parts) {
   return parts.filter(Boolean).join(" ");
 }
 
