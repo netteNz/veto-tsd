@@ -4,7 +4,6 @@ import { Box, Gauge, Settings, Swords } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 /**
- * Drop-in sidebar with a slim rail + expandable label panel.
  *
  * Usage (with React Router):
  * <AppLayout>
@@ -59,8 +58,8 @@ export function Sidebar() {
               exit={{ opacity: 0, x: -4 }}
               className="truncate"
             >
-              <div className="text-sm font-semibold leading-tight">Untitled UI</div>
-              <div className="text-xs text-neutral-400 leading-tight">store.untitledui.com</div>
+              <div className="text-sm font-semibold leading-tight">TSD Veto Platform</div>
+              <div className="text-xs text-neutral-400 leading-tight">netteNz</div>
             </motion.div>
           )}
         </AnimatePresence>

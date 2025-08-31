@@ -13,7 +13,7 @@ __pycache__/
 env/
 venv/
 pip-wheel-metadata/
-.env.development
+env.development
 
 
 
