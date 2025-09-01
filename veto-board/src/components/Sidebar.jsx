@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { NavLink, Outlet } from "react-router-dom";
-import { Box, Gauge, Settings, Swords } from "lucide-react";
+import { Box, Settings, Swords, ChevronLeft, ChevronRight } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 /**
@@ -110,7 +110,7 @@ export function Sidebar() {
           className="w-full rounded-xl border border-neutral-800 bg-neutral-900/60 px-3 py-2 text-xs text-neutral-300 hover:bg-neutral-900"
         >
           <div className="flex items-center justify-center gap-2">
-            <Gauge className="size-4" />
+            {open ? <ChevronLeft className="size-4" /> : <ChevronRight className="size-4" />}
             <AnimatePresence initial={false}>
               {open && (
                 <motion.span
