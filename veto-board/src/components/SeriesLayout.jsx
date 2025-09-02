@@ -2,8 +2,10 @@ import { useEffect, useState, useMemo } from "react";
 import { getGroupedCombos, getAllMaps, API_BASE } from "../lib/api";
 import AvailableCombos from "./AvailableCombos";
 import { currentPickerSide, currentPickerLabel } from "../lib/turn";
+import { processBansAndPicks, getMapId, getModeId, isSlayerMode } from "../lib/bans"; // Add isSlayerMode
 
 export default function SeriesLayout({ series, onSuccess }) {
+  // Keep existing state variables
   const [mapsById, setMapsById] = useState({});
   const [modeById, setModeById] = useState({});
   const [groupedCombos, setGroupedCombos] = useState({ objective: [], slayer: [] });
@@ -12,8 +14,19 @@ export default function SeriesLayout({ series, onSuccess }) {
   const [loadingPick, setLoadingPick] = useState(false);
   const [pickError, setPickError] = useState("");
 
-  const bans = series.actions?.filter(a => a.action_type === "BAN") ?? [];
-  const picks = series.actions?.filter(a => a.action_type === "PICK") ?? [];
+  // Use the shared utility to process bans and picks
+  const {
+    bannedCombinations,
+    slayerBannedMapIds,
+    pickedMapIds,
+    pickedCombinations
+  } = useMemo(() => {
+    return processBansAndPicks(series?.actions || []);
+  }, [series?.actions]);
+  
+  // Add these variables for rendering purposes
+  const bans = useMemo(() => series?.actions?.filter(a => a.action_type === "BAN") || [], [series?.actions]);
+  const picks = useMemo(() => series?.actions?.filter(a => a.action_type === "PICK") || [], [series?.actions]);
 
   const pickerLabel = currentPickerLabel(series);
   const turn = series?.turn; // { action, kind, team }
@@ -74,29 +87,78 @@ export default function SeriesLayout({ series, onSuccess }) {
     }
   };
 
-  // Helpers for available options (filter out banned/picked)
+  // Replace these custom implementations with ones using the shared data
   const objectiveBans = useMemo(() => {
-    return bans.filter(b => {
-      const name = modeById[b.mode || b.mode_id];
-      return name && name !== "Slayer";
-    });
-  }, [bans, modeById]);
+    if (!series?.actions) return [];
+    
+    // Use the already processed ban data to build display-ready bans
+    return series.actions
+      .filter(a => a.action_type === "BAN")
+      .filter(b => {
+        const mapId = Number(getMapId(b));
+        const modeId = Number(getModeId(b));
+        
+        // Check if it's an objective ban (not a slayer ban)
+        return modeId && !isSlayerMode(b.mode) && 
+          bannedCombinations.has(`${mapId}:${modeId}`);
+      });
+  }, [series?.actions, bannedCombinations]);
 
   const slayerBans = useMemo(() => {
-    return bans.filter(b => {
-      const name = modeById[b.mode || b.mode_id];
-      return name === "Slayer" || !b.mode;
-    });
-  }, [bans, modeById]);
+    if (!series?.actions) return [];
+    
+    // Keep track of map IDs we've already processed to avoid duplicates
+    const processedMapIds = new Set();
+    const bannedMaps = [];
+    
+    for (const action of series.actions) {
+      if (action.action_type !== "BAN") continue;
+      
+      const mapId = Number(getMapId(action));
+      if (!mapId) continue;
+      
+      // More precise Slayer ban detection
+      const isSlayerBan = 
+        // Explicitly marked as Slayer
+        (action.kind === "SLAYER_MAP") || 
+        // Detected by our shared utility
+        slayerBannedMapIds.has(mapId) ||
+        // Has Slayer mode
+        (action.mode_name?.toLowerCase() === "slayer" || 
+         modeById[action.mode_id] === "Slayer");
+      
+      // If it's a slayer ban and we haven't processed this map yet
+      if (isSlayerBan) {
+        // To ensure we don't have duplicate maps in display,
+        // only add if we haven't seen this map ID yet
+        if (!processedMapIds.has(mapId)) {
+          bannedMaps.push(action);
+          processedMapIds.add(mapId);
+        } else {
+          // If we've seen this map already, only show multiple entries
+          // if they're from different teams (for clarity)
+          const existingBan = bannedMaps.find(b => Number(getMapId(b)) === mapId);
+          if (existingBan && existingBan.team !== action.team) {
+            bannedMaps.push(action);
+          }
+        }
+      }
+    }
+    
+    return bannedMaps;
+  }, [series?.actions, slayerBannedMapIds, modeById]);
 
+  // Use the shared data structures for available maps
   const availableSlayerMaps = useMemo(() => {
     return (mapsList || []).filter(m => {
-      const supports = m?.modes?.some(md => md.name === "Slayer");
-      const wasBanned = slayerBans.some(b => (b.map || b.map_id) === m.id);
-      const wasPicked = picks.some(p => (p.map || p.map_id) === m.id);
-      return supports && !wasBanned && !wasPicked;
+      const mapId = Number(m.id);
+      const supports = m?.modes?.some(md => 
+        (typeof md === "string" && md.toLowerCase() === "slayer") || 
+        (md?.name?.toLowerCase() === "slayer")
+      );
+      return supports && !slayerBannedMapIds.has(mapId) && !pickedMapIds.has(mapId);
     });
-  }, [mapsList, slayerBans, picks]);
+  }, [mapsList, slayerBannedMapIds, pickedMapIds]);
 
   return (
     <div className="bg-gray-800 text-white p-6 mt-4 rounded space-y-6">

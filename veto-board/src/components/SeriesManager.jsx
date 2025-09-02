@@ -19,11 +19,17 @@ export default function SeriesManager({ seriesId }) {
     loadSeries();
   }, []);
 
+  // Update the loadSeries function to ensure we're getting fresh data:
+
   const loadSeries = async () => {
     try {
+      console.log("[DEBUG] Loading series data...");
       const data = await getSeries(seriesId);
+      console.log("[DEBUG] Series data loaded:", data);
+      console.log("[DEBUG] Actions:", data.actions);
       setSeries(data);
     } catch (err) {
+      console.error("[DEBUG] Error loading series:", err);
       setError("Could not load series.");
     }
   };

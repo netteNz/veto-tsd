@@ -1,5 +1,6 @@
 import React, { useMemo } from "react";
 import ComboPicker from "./ComboPicker";
+import { processBansAndPicks } from "../lib/bans";
 
 /**
  * Compute available objective combos and slayer maps after veto.
@@ -12,65 +13,70 @@ export default function AvailableCombos({
   onPick,
   loading = false,
 }) {
-  const actions = series.actions ?? [];
-  const bans = actions.filter((a) => a.action_type === "BAN");
-  const picks = actions.filter((a) => a.action_type === "PICK");
+  // Use the shared ban/pick processing logic
+  const {
+    bannedCombinations,
+    slayerBannedMapIds,
+    pickedMapIds,
+    pickedCombinations
+  } = useMemo(() => {
+    return processBansAndPicks(series.actions || []);
+  }, [series.actions]);
 
-  const mapIdFrom = (obj) =>
-    obj?.map_id ?? obj?.map?.id ?? obj?.map ?? obj?.id ?? obj?.pk ?? obj;
+  const getMapId = (x) => 
+    x?.map_id || x?.map?.id || x?.map || x?.id || x?.pk || null;
 
-  const bannedMapIds = useMemo(() => {
-    const s = new Set();
-    for (const b of bans) {
-      const mid = mapIdFrom(b);
-      if (mid) s.add(Number(mid));
-    }
-    return s;
-  }, [bans]);
+  const getModeId = (x) => 
+    x?.mode_id || x?.mode?.id || x?.mode || null;
 
-  const pickedMapIds = useMemo(() => {
-    const s = new Set();
-    for (const p of picks) {
-      const mid = mapIdFrom(p);
-      if (mid) s.add(Number(mid));
-    }
-    return s;
-  }, [picks]);
-
-  // Build objective combos grouped by mode, skipping Slayer and empty groups
+  // Build objective combos grouped by mode, with mode-aware ban checking
   const availableObjectiveCombos = useMemo(() => {
-    if (!groupedCombos || Array.isArray(groupedCombos)) return [];
+    if (!groupedCombos?.objective) return [];
 
-    const groups = [];
-    Object.entries(groupedCombos).forEach(([modeName, combos]) => {
-      if (!Array.isArray(combos)) return;
-      if (modeName.toLowerCase().includes("slayer")) return; // skip Slayer
-
-      const filtered = combos.filter((c) => {
-        const mid = mapIdFrom(c);
-        if (!mid) return false;
-        if (bannedMapIds.has(Number(mid))) return false;
-        if (pickedMapIds.has(Number(mid))) return false;
+    return groupedCombos.objective
+      .filter(modeGroup => {
+        // Skip empty groups and slayer modes
+        if (!modeGroup.combos || modeGroup.combos.length === 0) return false;
+        const modeName = (modeGroup.mode || "").toLowerCase();
+        if (modeName.includes("slayer")) return false;
         return true;
-      });
+      })
+      .map(modeGroup => {
+        const modeId = Number(getModeId(modeGroup));
+        // Only include combos that aren't banned or picked
+        const availableCombos = (modeGroup.combos || [])
+          .filter(combo => {
+            const mapId = Number(getMapId(combo));
+            if (!mapId || pickedMapIds.has(mapId)) return false;
+            
+            // Check if this specific map+mode combination is banned
+            const comboKey = `${mapId}:${modeId}`;
+            return !bannedCombinations.has(comboKey);
+          })
+          .map(combo => ({
+            ...combo,
+            map_id: Number(getMapId(combo)),
+            mode_id: modeId
+          }));
+          
+        // Only include mode groups that have available maps
+        if (availableCombos.length === 0) return null;
+        return { ...modeGroup, combos: availableCombos };
+      })
+      .filter(Boolean); // Remove null entries
+  }, [groupedCombos, bannedCombinations, pickedMapIds]);
 
-      if (filtered.length > 0) {
-        groups.push({ mode: modeName, combos: filtered });
-      }
-    });
-
-    console.debug("AvailableCombos - objective groups:", groups);
-    return groups;
-  }, [groupedCombos, bannedMapIds, pickedMapIds]);
-
-  // Slayer: filter out banned/picked and non-slayer-support maps
+  // Slayer: filter out maps that are specifically banned for Slayer
   const availableSlayerMaps = useMemo(() => {
     return (mapsList || []).filter((m) => {
-      const mid = mapIdFrom(m);
-      if (!mid) return false;
-      if (bannedMapIds.has(Number(mid))) return false;
-      if (pickedMapIds.has(Number(mid))) return false;
+      const mapId = Number(getMapId(m));
+      if (!mapId) return false;
+      
+      // Check if this map is banned for Slayer or picked for any mode
+      if (slayerBannedMapIds.has(mapId)) return false;
+      if (pickedMapIds.has(mapId)) return false;
 
+      // Verify it supports Slayer
       if (m.modes && Array.isArray(m.modes)) {
         return m.modes.some(
           (mode) =>
@@ -80,9 +86,9 @@ export default function AvailableCombos({
               mode.name.toLowerCase().includes("slayer"))
         );
       }
-      return true;
+      return false; // If no modes array, assume it doesn't support Slayer
     });
-  }, [mapsList, bannedMapIds, pickedMapIds]);
+  }, [mapsList, slayerBannedMapIds, pickedMapIds]);
 
   return (
     <div>
