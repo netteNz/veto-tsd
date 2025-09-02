@@ -104,49 +104,36 @@ export default function SeriesLayout({ series, onSuccess }) {
       });
   }, [series?.actions, bannedCombinations]);
 
+  // Fix the slayerBans calculation to avoid duplicates by map name
   const slayerBans = useMemo(() => {
     if (!series?.actions) return [];
     
-    // Keep track of map IDs we've already processed to avoid duplicates
-    const processedMapIds = new Set();
-    const bannedMaps = [];
+    // Track banned maps by name to avoid duplication in the UI
+    const uniqueBannedMapNames = new Set();
+    const result = [];
     
     for (const action of series.actions) {
       if (action.action_type !== "BAN") continue;
       
       const mapId = Number(getMapId(action));
-      if (!mapId) continue;
+      const mapName = action.map || mapsById[mapId]?.name || `Map ${mapId}`;
       
-      // More precise Slayer ban detection
       const isSlayerBan = 
-        // Explicitly marked as Slayer
-        (action.kind === "SLAYER_MAP") || 
-        // Detected by our shared utility
+        action.kind === "SLAYER_MAP" ||
         slayerBannedMapIds.has(mapId) ||
-        // Has Slayer mode
-        (action.mode_name?.toLowerCase() === "slayer" || 
-         modeById[action.mode_id] === "Slayer");
+        (!getModeId(action) && action.action_type === "BAN");
       
-      // If it's a slayer ban and we haven't processed this map yet
       if (isSlayerBan) {
-        // To ensure we don't have duplicate maps in display,
-        // only add if we haven't seen this map ID yet
-        if (!processedMapIds.has(mapId)) {
-          bannedMaps.push(action);
-          processedMapIds.add(mapId);
-        } else {
-          // If we've seen this map already, only show multiple entries
-          // if they're from different teams (for clarity)
-          const existingBan = bannedMaps.find(b => Number(getMapId(b)) === mapId);
-          if (existingBan && existingBan.team !== action.team) {
-            bannedMaps.push(action);
-          }
+        // Only add this ban if we haven't seen this map name before
+        if (!uniqueBannedMapNames.has(mapName)) {
+          uniqueBannedMapNames.add(mapName);
+          result.push(action);
         }
       }
     }
     
-    return bannedMaps;
-  }, [series?.actions, slayerBannedMapIds, modeById]);
+    return result;
+  }, [series?.actions, slayerBannedMapIds, mapsById]);
 
   // Use the shared data structures for available maps
   const availableSlayerMaps = useMemo(() => {

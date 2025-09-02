@@ -7,6 +7,7 @@ import "../index.css";
 export default function VetoPage() {
   const [seriesId, setSeriesId] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [refreshTrigger, setRefreshTrigger] = useState(0); // Add refresh trigger
   const initialized = useRef(false);
 
   useEffect(() => {
@@ -39,6 +40,8 @@ export default function VetoPage() {
       const newSeries = await createSeries();
       console.log("[DEBUG] New series created:", newSeries);
       setSeriesId(newSeries.id);
+      // Force refresh of all child components
+      setRefreshTrigger(prev => prev + 1);
     } catch (err) {
       console.error("[DEBUG] Failed to create new series:", err);
       alert(`Failed to create new series: ${err.message}`);
@@ -47,7 +50,7 @@ export default function VetoPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-900 p-6">
+    <div className="p-6">
       <div className="flex justify-between items-center mb-4">
         <h1 className="text-3xl font-bold text-white">TSD Veto Tool</h1>
         <button
@@ -62,7 +65,11 @@ export default function VetoPage() {
       {loading ? (
         <p className="text-white">Loading...</p>
       ) : (
-        <SeriesManager seriesId={seriesId} />
+        <SeriesManager 
+          key={`series-${seriesId}-${refreshTrigger}`} // Force component to re-mount on new series
+          seriesId={seriesId}
+          onSuccess={() => setRefreshTrigger(prev => prev + 1)} // Refresh on success actions
+        />
       )}
     </div>
   );

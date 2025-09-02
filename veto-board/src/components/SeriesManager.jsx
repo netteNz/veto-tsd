@@ -1,25 +1,31 @@
 import { useEffect, useState } from "react";
+import { getSeries, postUndo, postReset } from "../lib/api";
+import { processBansAndPicks } from "../lib/bans";
 import BanPhase from "./BanPhase";
 import PickPhase from "./PickPhase";
 import SeriesLayout from "./SeriesLayout";
-
-import {
-  getSeries,
-  postUndo,
-  postReset,
-} from "../lib/api";
-import TeamAssignmentForm from "./TeamAssignmentForm";
 import SeriesTypeSelector from "./SeriesTypeSelector";
+import TeamAssignmentForm from "./TeamAssignmentForm";
 
-export default function SeriesManager({ seriesId }) {
+export default function SeriesManager({ seriesId, onSuccess }) {
   const [series, setSeries] = useState(null);
   const [error, setError] = useState("");
+  const [processedBanData, setProcessedBanData] = useState(null);
 
   useEffect(() => {
-    loadSeries();
-  }, []);
+    if (seriesId) {
+      loadSeries();
+    }
+  }, [seriesId]);
 
-  // Update the loadSeries function to ensure we're getting fresh data:
+  useEffect(() => {
+    if (series?.actions) {
+      const banData = processBansAndPicks(series.actions);
+      setProcessedBanData(banData);
+
+      console.log("[DEBUG] Processed ban data:", banData);
+    }
+  }, [series?.actions]);
 
   const loadSeries = async () => {
     try {
@@ -66,34 +72,46 @@ export default function SeriesManager({ seriesId }) {
     switch (series.state) {
       case "IDLE":
         return <TeamAssignmentForm series={series} onSuccess={loadSeries} />;
-        
+
       case "SERIES_SETUP":
         return <SeriesTypeSelector series={series} onSuccess={loadSeries} />;
-      
+
       case "BAN_PHASE":
         return (
           <div className="space-y-6">
-            <BanPhase series={series} onSuccess={loadSeries} />
+            <BanPhase
+              series={series}
+              onSuccess={() => {
+                loadSeries();
+                onSuccess?.();
+              }}
+              processedBanData={processedBanData}
+            />
             <SeriesLayout series={series} onSuccess={loadSeries} />
           </div>
         );
-      
+
       case "PICK_WINDOW":
         return (
           <div className="space-y-6">
-            <PickPhase series={series} onSuccess={loadSeries} />
+            <PickPhase
+              series={series}
+              onSuccess={() => {
+                loadSeries();
+                onSuccess?.();
+              }}
+              processedBanData={processedBanData}
+            />
             <SeriesLayout series={series} onSuccess={loadSeries} />
           </div>
         );
-      
+
       case "SERIES_COMPLETE":
         return <SeriesLayout series={series} onSuccess={loadSeries} />;
-      
+
       default:
         return (
-          <div className="text-gray-400">
-            Unknown state: {series.state}
-          </div>
+          <div className="text-gray-400">Unknown state: {series.state}</div>
         );
     }
   };
