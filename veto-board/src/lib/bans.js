@@ -98,6 +98,14 @@ export function processBansAndPicks(actions) {
     }
   }
   
+  console.log("Slayer banned map IDs:", Array.from(slayerBannedMapIds));
+  console.log("Maps banned for specific modes:", 
+    Array.from(bannedCombinations).map(combo => {
+      const [mapId, modeId] = combo.split(':');
+      return { mapId: Number(mapId), modeId: Number(modeId) };
+    })
+  );
+  
   return {
     bannedCombinations,
     slayerBannedMapIds,

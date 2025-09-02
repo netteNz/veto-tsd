@@ -69,22 +69,37 @@ export default function AvailableCombos({
   // Slayer: filter out maps that are specifically banned for Slayer
   const availableSlayerMaps = useMemo(() => {
     return (mapsList || []).filter((m) => {
+      // Convert to Number to ensure consistent comparison
       const mapId = Number(getMapId(m));
       if (!mapId) return false;
       
-      // Check if this map is banned for Slayer or picked for any mode
-      if (slayerBannedMapIds.has(mapId)) return false;
-      if (pickedMapIds.has(mapId)) return false;
+      // Use explicit Number conversion for comparison with Set values
+      if (slayerBannedMapIds.has(mapId)) {
+        console.log(`Map ${mapId} (${m.name || m.map}) is banned for Slayer`);
+        return false;
+      }
+      
+      if (pickedMapIds.has(mapId)) {
+        console.log(`Map ${mapId} (${m.name || m.map}) is already picked`);
+        return false;
+      }
 
-      // Verify it supports Slayer
+      // Improved Slayer mode detection
       if (m.modes && Array.isArray(m.modes)) {
-        return m.modes.some(
-          (mode) =>
-            (typeof mode === "string" && mode.toLowerCase().includes("slayer")) ||
-            (typeof mode === "object" &&
-              mode.name &&
-              mode.name.toLowerCase().includes("slayer"))
-        );
+        return m.modes.some(mode => {
+          if (typeof mode === "string") {
+            return mode.toLowerCase().includes("slayer");
+          }
+          if (typeof mode === "object" && mode.name) {
+            return mode.name.toLowerCase().includes("slayer");
+          }
+          if (typeof mode === "number" || typeof mode === "string") {
+            // Check if this is a direct mode ID reference that's a slayer mode
+            // This handles cases where modes are just IDs
+            return [6, "6", "slayer"].includes(mode);
+          }
+          return false;
+        });
       }
       return false; // If no modes array, assume it doesn't support Slayer
     });

@@ -129,13 +129,13 @@ export default function SeriesManager({ seriesId, onSuccess }) {
   if (!series) return <div className="text-white">Loading series...</div>;
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6 max-w-4xl mx-auto">
       <h2 className="text-xl font-bold text-white">Series: {series.id}</h2>
 
       {renderCurrentPhase()}
 
       {/* Only show Undo/Reset buttons during active phases */}
-      {(series.state === "BAN_PHASE" || series.state === "PICK_WINDOW") && (
+      {series && (series.state === "BAN_PHASE" || series.state === "PICK_WINDOW") && (
         <div className="flex gap-2">
           <button
             onClick={handleUndo}
@@ -152,8 +152,9 @@ export default function SeriesManager({ seriesId, onSuccess }) {
         </div>
       )}
 
-      {/* TEMPORARY: Display current state (can be removed later) */}
-      <div className="text-sm text-gray-400">State: {series.state}</div>
+      {series && (
+        <div className="text-sm text-gray-400">State: {series.state}</div>
+      )}
     </div>
   );
 }

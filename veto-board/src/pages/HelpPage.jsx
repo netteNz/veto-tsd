@@ -41,7 +41,7 @@ export default function HelpPage() {
             <ul className="list-disc pl-6 text-gray-300 space-y-1">
               <li>Create and manage Bo5 and Bo7 series</li>
               <li>Team-based ban phase for objective and slayer maps</li>
-              <li>Map selection phase with smart filtering</li>
+              <li>Map picks phase based off the structure of the series</li>
               <li>Visual game layout displaying the final series arrangement</li>
               <li>Random series generation for practice and testing</li>
             </ul>
@@ -87,7 +87,7 @@ export default function HelpPage() {
             <div className="bg-gray-900 p-4 rounded-lg">
               <h3 className="font-semibold text-white mb-2">How to Ban:</h3>
               <ol className="list-decimal pl-6 text-gray-300 space-y-1">
-                <li>The team whose turn it is will be indicated at the top</li>
+                <li>The team whose turn it is will be indicated at the top right</li>
                 <li>Select a map-mode combination from the dropdown</li>
                 <li>Click "Confirm Ban" to finalize your ban</li>
                 <li>The ban will be recorded and the turn will switch to the other team</li>
@@ -199,7 +199,7 @@ export default function HelpPage() {
           </h2>
           <div className="space-y-4">
             <div className="bg-gray-900 p-4 rounded-lg">
-              <h3 className="font-semibold text-white mb-2">For Tournament Organizers:</h3>
+              <h3 className="font-semibold text-white mb-2">For Custom $8s and Tournament Organizers:</h3>
               <ul className="list-disc pl-6 text-gray-300 space-y-1">
                 <li>Set up the series before teams arrive to save time</li>
                 <li>Consider having a practice run to familiarize teams with the tool</li>
