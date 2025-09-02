@@ -1,6 +1,14 @@
 import { useState } from "react";
 import { Outlet, NavLink } from "react-router-dom";
-import { Box, Settings, Swords, ChevronLeft, ChevronRight, Dices } from "lucide-react";
+import { 
+  Box, 
+  Settings, 
+  Swords, 
+  ChevronLeft, 
+  ChevronRight, 
+  Dices, 
+  HelpCircle 
+} from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 
@@ -15,6 +23,7 @@ import { motion, AnimatePresence } from "framer-motion";
 const NAV_ITEMS = [
   { label: "Veto", to: "/veto", icon: Swords },
   { label: "Random Series", to: "/random", icon: Dices },
+  { label: "How to Use", to: "/help", icon: HelpCircle },
   // Add more later: { label: "Analytics", to: "/analytics", icon: Gauge }
 ];
 

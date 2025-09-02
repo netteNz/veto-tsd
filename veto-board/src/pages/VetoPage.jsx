@@ -1,5 +1,7 @@
 // src/pages/VetoPage.jsx
 import { useEffect, useState, useRef } from "react";
+import { Link } from "react-router-dom";
+import { HelpCircle } from "lucide-react";
 import SeriesManager from "../components/SeriesManager";
 import { createSeries } from "../lib/api";
 import "../index.css";
@@ -52,7 +54,13 @@ export default function VetoPage() {
   return (
     <div className="p-6">
       <div className="flex justify-between items-center mb-4">
-        <h1 className="text-3xl font-bold text-white">TSD Veto Tool</h1>
+        <div className="flex items-center">
+          <h1 className="text-3xl font-bold text-white">TSD Veto Tool</h1>
+          <Link to="/help" className="ml-4 text-sm text-blue-400 hover:underline flex items-center">
+            <HelpCircle size={14} className="mr-1" />
+            <span>How to Use</span>
+          </Link>
+        </div>
         <button
           onClick={handleNewSeries}
           className="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded text-white"
@@ -65,7 +73,7 @@ export default function VetoPage() {
       {loading ? (
         <p className="text-white">Loading...</p>
       ) : (
-        <SeriesManager 
+        <SeriesManager
           key={`series-${seriesId}-${refreshTrigger}`} // Force component to re-mount on new series
           seriesId={seriesId}
           onSuccess={() => setRefreshTrigger(prev => prev + 1)} // Refresh on success actions
