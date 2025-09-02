@@ -178,7 +178,7 @@ export default function PickPhase({ series, onSuccess }) {
 
   // Add state to track expanded/collapsed sections
   const [expandedSections, setExpandedSections] = useState({
-    availableSelections: true,
+    availableSelections: false,  // Now collapsed by default
     objectiveModes: true
   });
 
