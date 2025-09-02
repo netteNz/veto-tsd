@@ -3,6 +3,7 @@ import { Outlet, NavLink } from "react-router-dom";
 import { Box, Settings, Swords, ChevronLeft, ChevronRight, Dices } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
+
 /**
  *
  * Usage (with React Router):
@@ -126,14 +127,6 @@ export function Sidebar() {
             </AnimatePresence>
           </div>
         </button>
-
-        <div className="mt-2 flex items-center justify-between rounded-xl border border-neutral-800 bg-neutral-900/60 px-3 py-2">
-          <div className="flex items-center gap-2">
-            <Settings className="size-4 text-neutral-300" />
-            {open && <span className="text-xs text-neutral-300">Settings</span>}
-          </div>
-          <span className="rounded-full bg-neutral-800 px-2 py-0.5 text-[10px] text-neutral-300">v0.1</span>
-        </div>
       </div>
     </aside>
   );

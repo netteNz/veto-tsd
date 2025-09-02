@@ -2,7 +2,17 @@ import { useEffect, useState, useMemo } from "react";
 import { getGroupedCombos, getAllMaps, API_BASE } from "../lib/api";
 import AvailableCombos from "./AvailableCombos";
 import { currentPickerSide, currentPickerLabel } from "../lib/turn";
-import { processBansAndPicks, getMapId, getModeId, isSlayerMode } from "../lib/bans"; // Add isSlayerMode
+import { processBansAndPicks, getMapId, getModeId, isSlayerMode, getModeName } from "../lib/bans"; // Add isSlayerMode
+import { 
+  Flag, 
+  Castle, 
+  Skull, 
+  Crown, 
+  Bomb, 
+  Target, 
+  XCircle, 
+  CheckCircle 
+} from "lucide-react";
 
 export default function SeriesLayout({ series, onSuccess }) {
   // Keep existing state variables
@@ -87,53 +97,72 @@ export default function SeriesLayout({ series, onSuccess }) {
     }
   };
 
-  // Replace these custom implementations with ones using the shared data
+  // Update the objectiveBans useMemo implementation with better type safety
+
   const objectiveBans = useMemo(() => {
     if (!series?.actions) return [];
     
-    // Use the already processed ban data to build display-ready bans
-    return series.actions
-      .filter(a => a.action_type === "BAN")
-      .filter(b => {
-        const mapId = Number(getMapId(b));
-        const modeId = Number(getModeId(b));
+    // Log the actions to debug
+    console.log("[DEBUG] All actions for objective bans:", series.actions);
+    
+    // More lenient filtering for objective bans
+    return series.actions.filter(action => {
+      // Must be a ban
+      if (action.action_type !== "BAN") return false;
+      
+      // If it has kind field, use that to determine
+      if (action.kind) {
+        return action.kind === "OBJECTIVE_COMBO" || action.kind.includes("OBJECTIVE");
+      }
+      
+      // Not explicitly marked as slayer - ADD TYPE CHECKING
+      const isExplicitlySlayer = 
+        action.kind === "SLAYER_MAP" ||
+        action.mode_id === 6 ||
+        (typeof action.mode === 'string' && action.mode.toLowerCase() === "slayer") || // Fixed
+        (typeof action.mode_name === 'string' && action.mode_name.toLowerCase() === "slayer"); // Fixed
         
-        // Check if it's an objective ban (not a slayer ban)
-        return modeId && !isSlayerMode(b.mode) && 
-          bannedCombinations.has(`${mapId}:${modeId}`);
-      });
-  }, [series?.actions, bannedCombinations]);
+      if (isExplicitlySlayer) return false;
+      
+      // Has a mode_id that's not slayer, or has a mode name that's not slayer
+      return action.mode_id !== undefined || action.mode || action.mode_name;
+    });
+  }, [series?.actions]);
 
-  // Fix the slayerBans calculation to avoid duplicates by map name
+  // Also update the slayerBans logic with the same fix
   const slayerBans = useMemo(() => {
     if (!series?.actions) return [];
     
-    // Track banned maps by name to avoid duplication in the UI
-    const uniqueBannedMapNames = new Set();
-    const result = [];
+    // Log the actions to debug
+    console.log("[DEBUG] All actions for slayer bans:", series.actions);
     
-    for (const action of series.actions) {
-      if (action.action_type !== "BAN") continue;
+    // Collect unique slayer bans by map
+    const uniqueMaps = new Map();
+    
+    series.actions.forEach(action => {
+      // Skip non-bans
+      if (action.action_type !== "BAN") return;
       
-      const mapId = Number(getMapId(action));
-      const mapName = action.map || mapsById[mapId]?.name || `Map ${mapId}`;
-      
-      const isSlayerBan = 
+      // Check if this is a slayer ban using multiple approaches - ADD TYPE CHECKING
+      const isSlayer = 
         action.kind === "SLAYER_MAP" ||
-        slayerBannedMapIds.has(mapId) ||
-        (!getModeId(action) && action.action_type === "BAN");
-      
-      if (isSlayerBan) {
-        // Only add this ban if we haven't seen this map name before
-        if (!uniqueBannedMapNames.has(mapName)) {
-          uniqueBannedMapNames.add(mapName);
-          result.push(action);
-        }
-      }
-    }
+        action.mode_id === 6 ||
+        (typeof action.mode === 'string' && action.mode.toLowerCase() === "slayer") || // Fixed
+        (typeof action.mode_name === 'string' && action.mode_name.toLowerCase() === "slayer") || // Fixed
+        (!action.mode_id && !action.mode && !action.mode_name); // If no mode specified, assume slayer
     
-    return result;
-  }, [series?.actions, slayerBannedMapIds, mapsById]);
+      if (!isSlayer) return;
+      
+      const mapId = action.map_id || action.map;
+      if (!mapId) return;
+      
+      // Store by map ID, and keep the most recent ban for each map
+      uniqueMaps.set(String(mapId), action);
+    });
+    
+    // Convert map values to array
+    return Array.from(uniqueMaps.values());
+  }, [series?.actions]);
 
   // Use the shared data structures for available maps
   const availableSlayerMaps = useMemo(() => {
@@ -147,6 +176,50 @@ export default function SeriesLayout({ series, onSuccess }) {
     });
   }, [mapsList, slayerBannedMapIds, pickedMapIds]);
 
+  // In SeriesLayout.jsx where you render the Game Layout
+  const getGameMode = (action) => {
+    if (action.kind === "SLAYER_MAP" || 
+        action.mode_name === "Slayer" || 
+        action.mode === "Slayer") {
+      return "Slayer";
+    }
+    return action.mode || action.mode_name;
+  };
+
+  // Update the renderModeIcon function to swap icons for Slayer and Oddball
+
+  const renderModeIcon = (modeName, isSlayer = false) => {
+    const iconProps = { 
+      size: 18, 
+      className: "transition-transform hover:scale-110" 
+    };
+    
+    // Add type safety - convert to string and handle null/undefined
+    const modeNameStr = typeof modeName === 'string' ? modeName : String(modeName || '');
+    const lowerModeName = modeNameStr.toLowerCase();
+    
+    // CHANGED: Slayer should use Target icon
+    if (isSlayer || lowerModeName.includes('slayer')) {
+      return <Target {...iconProps} className={`${iconProps.className} text-red-400`} />;
+    }
+    
+    if (lowerModeName.includes('flag')) {
+      return <Flag {...iconProps} className={`${iconProps.className} text-blue-400`} />;
+    } else if (lowerModeName.includes('stronghold')) {
+      return <Castle {...iconProps} className={`${iconProps.className} text-purple-400`} />;
+    } else if (lowerModeName.includes('king')) {
+      return <Crown {...iconProps} className={`${iconProps.className} text-yellow-400`} />;
+    } else if (lowerModeName.includes('bomb')) {
+      return <Bomb {...iconProps} className={`${iconProps.className} text-orange-400`} />;
+    // CHANGED: Oddball should use Skull icon
+    } else if (lowerModeName.includes('oddball')) {
+      return <Skull {...iconProps} className={`${iconProps.className} text-green-400`} />;
+    }
+    
+    // Default icon if no match
+    return <div className="w-[18px] h-[18px]" />;
+  };
+
   return (
     <div className="bg-gray-800 text-white p-6 mt-4 rounded space-y-6">
       <div className="flex justify-between items-center">
@@ -159,34 +232,62 @@ export default function SeriesLayout({ series, onSuccess }) {
       {/* Bans Summary */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="bg-gray-700 p-4 rounded">
-          <h3 className="text-lg font-semibold mb-3 text-red-400">
+          <h3 className="text-lg font-semibold mb-3 text-red-400 flex items-center">
+            <XCircle size={18} className="mr-2" />
             Objective Bans ({objectiveBans.length})
           </h3>
           <div className="space-y-2">
             {objectiveBans.length === 0 && <div className="text-gray-400 text-sm">No objective bans yet</div>}
-            {objectiveBans.map((ban, i) => (
-              <div key={ban.id || i} className="flex justify-between text-sm">
-                <span>{mapsById[ban.map || ban.map_id] || `Map ${ban.map || ban.map_id}`}</span>
-                <span className="text-gray-400">
-                  {modeById[ban.mode || ban.mode_id] || `Mode ${ban.mode || ban.mode_id}`} — Team {ban.team}
-                </span>
-              </div>
-            ))}
+            {objectiveBans.map(ban => {
+              // Look up map name from the ID
+              const mapId = ban.map_id || ban.map;
+              const mapName = (typeof mapId === 'number' && mapsById[mapId]) || ban.map || `Map ${mapId}`;
+              
+              // Look up mode name from the ID
+              const modeId = ban.mode_id || ban.mode;
+              const modeName = (typeof modeId === 'number' && modeById[modeId]) || ban.mode_name || ban.mode || `Mode ${modeId}`;
+              
+              return (
+                <div key={ban.id} className="flex items-center justify-between mb-1 bg-gray-800/50 p-2 rounded">
+                  <div className="flex items-center">
+                    {renderModeIcon(modeName)}
+                    <span className="ml-2 font-medium">{mapName}</span>
+                  </div>
+                  <div className="flex items-center text-gray-400">
+                    <span>{modeName} — Team {ban.team}</span>
+                    <XCircle size={16} className="ml-2 text-red-400" />
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
 
         <div className="bg-gray-700 p-4 rounded">
-          <h3 className="text-lg font-semibold mb-3 text-red-400">
+          <h3 className="text-lg font-semibold mb-3 text-red-400 flex items-center">
+            <XCircle size={18} className="mr-2" />
+            <Target size={18} className="mr-2" />
             Slayer Bans ({slayerBans.length})
           </h3>
           <div className="space-y-2">
             {slayerBans.length === 0 && <div className="text-gray-400 text-sm">No slayer bans yet</div>}
-            {slayerBans.map((ban, i) => (
-              <div key={ban.id || i} className="flex justify-between text-sm">
-                <span>{mapsById[ban.map || ban.map_id] || `Map ${ban.map || ban.map_id}`}</span>
-                <span className="text-gray-400">Team {ban.team}</span>
-              </div>
-            ))}
+            {slayerBans.map((ban, i) => {
+              const mapId = ban.map_id || ban.map;
+              const mapName = (typeof mapId === 'number' && mapsById[mapId]) || ban.map || `Map ${mapId}`;
+              
+              return (
+                <div key={ban.id || i} className="flex justify-between text-sm bg-gray-800/50 p-2 rounded">
+                  <div className="flex items-center">
+                    <Target size={16} className="mr-2 text-red-400" />
+                    <span className="font-medium">{mapName}</span>
+                  </div>
+                  <div className="flex items-center text-gray-400">
+                    <span>Team {ban.team}</span>
+                    <XCircle size={16} className="ml-2 text-red-400" />
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
       </div>
@@ -202,16 +303,42 @@ export default function SeriesLayout({ series, onSuccess }) {
 
         {/* Existing picked rounds (if server returns them) */}
         <div className="grid grid-cols-1 gap-3">
-          {picks.map((p, i) => (
-            <div key={p.id || i} className="flex justify-between bg-gray-800 p-3 rounded">
-              <div className="font-medium">
-                {mapsById[p.map || p.map_id] || `Map ${p.map || p.map_id}`}
+          {picks.map((p, i) => {
+            // Get proper map name from ID
+            const mapName = mapsById[p.map || p.map_id] || p.map || `Map ${p.map || p.map_id}`;;
+            
+            // Get proper mode name using lookup
+            const modeId = p.mode_id || p.mode;
+            let modeName;
+            
+            // Handle Slayer special case
+            if (p.kind === "SLAYER_MAP" || 
+                p.mode_name === "Slayer" || 
+                p.mode === "Slayer" ||
+                modeId === 6) {
+              modeName = "Slayer";
+            } else {
+              // Try to get name from lookup table first, then fallbacks
+              modeName = (typeof modeId === 'number' && modeById[modeId]) || 
+                        p.mode_name || 
+                        (typeof p.mode === 'string' ? p.mode : `Mode ${modeId}`);
+            }
+            
+            // Determine if this is a Slayer mode for icon rendering
+            const isSlayerMode = modeName === "Slayer" || p.kind === "SLAYER_MAP";
+            
+            return (
+              <div key={p.id || i} className="flex justify-between bg-gray-800 p-3 rounded">
+                <div className="font-medium">
+                  {mapName}
+                </div>
+                <div className="flex items-center text-gray-300">
+                  {renderModeIcon(modeName, isSlayerMode)}
+                  <span className="ml-2">{modeName}</span>
+                </div>
               </div>
-              <div className="text-gray-400">
-                {modeById[p.mode || p.mode_id] || "Slayer"}
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         {/* Inline picker panel (only when it’s pick window) */}
@@ -241,13 +368,6 @@ export default function SeriesLayout({ series, onSuccess }) {
             {pickError && <div className="mt-2 text-red-400 text-sm">{pickError}</div>}
           </div>
         )}
-      </div>
-
-      {/* Debug footer */}
-      <div className="text-xs text-gray-500 space-y-1">
-        <div>DEBUG: Bans: {bans.length}, Picks: {picks.length}</div>
-        <div>DEBUG: State: {series.state}</div>
-        <div>DEBUG: Turn: {JSON.stringify(turn)}</div>
       </div>
     </div>
   );

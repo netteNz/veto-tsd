@@ -13,7 +13,7 @@ export default function RandomSeriesPage() {
     // Maps and modes to use for random generation
     const maps = [
       "Aquarius", "Live Fire", "Streets", "Recharge", 
-      "Catalyst", "Solitude", "Fortress", "Origin", "Lattice"
+      "Solitude", "Fortress", "Origin", "Lattice"
     ];
     
     const objectiveModes = [
@@ -26,9 +26,24 @@ export default function RandomSeriesPage() {
     
     const slayerMode = { id: 6, name: "Slayer" };
     
-    // Determine number of bans and picks based on series type
-    const totalBans = seriesType === "Bo7" ? 7 : 5;
-    const objectiveBans = seriesType === "Bo7" ? 5 : 3;
+    // Determine series parameters based on series type
+    let totalGames;
+    let gamePattern = []; // true = objective, false = slayer
+    
+    if (seriesType === "Bo3") {
+      totalGames = 3;
+      gamePattern = [true, false, true]; // Objective, Slayer, Objective
+    } else if (seriesType === "Bo5") {
+      totalGames = 5;
+      gamePattern = [true, false, true, true, false]; // Obj, Slayer, Obj, Obj, Slayer
+    } else { // Bo7
+      totalGames = 7;
+      // Updated pattern: obj, slayer, obj, obj, slayer, obj, slayer
+      gamePattern = [true, false, true, true, false, true, false];  
+    }
+    
+    const totalBans = seriesType === "Bo7" ? 7 : seriesType === "Bo5" ? 5 : 3;
+    const objectiveBans = seriesType === "Bo7" ? 5 : seriesType === "Bo5" ? 3 : 2;
     const slayerBans = totalBans - objectiveBans;
     
     // Generate bans
@@ -42,7 +57,6 @@ export default function RandomSeriesPage() {
       do {
         mapName = maps[Math.floor(Math.random() * maps.length)];
         attempts++;
-        // Safety check to prevent infinite loops
         if (attempts > 100) break;
       } while (usedMaps.has(`${mapName}-objective`));
       
@@ -69,7 +83,6 @@ export default function RandomSeriesPage() {
       do {
         mapName = maps[Math.floor(Math.random() * maps.length)];
         attempts++;
-        // Safety check to prevent infinite loops
         if (attempts > 100) break;
       } while (usedMaps.has(`${mapName}-slayer`));
       
@@ -88,27 +101,25 @@ export default function RandomSeriesPage() {
       });
     }
     
-    // Generate picks (maximum 4 to avoid performance issues)
-    const totalGames = Math.min(4, seriesType === "Bo7" ? 7 : 5);
+    // Generate picks following the specific pattern
     const pickedMaps = new Set();
     
     for (let i = 0; i < totalGames; i++) {
-      const isObjective = i % 2 === 0; // Alternate objective and slayer
+      const isObjective = gamePattern[i]; // Get from pattern instead of alternating
+      console.log(`Game ${i+1}: ${isObjective ? "Objective" : "Slayer"}`);
       
       let mapName;
       let attempts = 0;
       do {
         mapName = maps[Math.floor(Math.random() * maps.length)];
         attempts++;
-        // Safety check to prevent infinite loops
         if (attempts > 100) break;
-      } while (pickedMaps.has(mapName) || 
-              (isObjective && usedMaps.has(`${mapName}-objective`)) ||
-              (!isObjective && usedMaps.has(`${mapName}-slayer`)));
+      } while (pickedMaps.has(mapName));
       
       pickedMaps.add(mapName);
       
       if (isObjective) {
+        // For objective games, select a random objective mode
         const mode = objectiveModes[Math.floor(Math.random() * objectiveModes.length)];
         
         actions.push({
@@ -119,9 +130,11 @@ export default function RandomSeriesPage() {
           mode: mode.name,
           mode_id: mode.id,
           mode_name: mode.name,
-          team: i % 2 === 0 ? "A" : "B"
+          team: i % 2 === 0 ? "A" : "B",
+          kind: "OBJECTIVE_COMBO"  // Add explicit kind for objective
         });
       } else {
+        // For slayer games
         actions.push({
           id: totalBans + i + 1,
           action_type: "PICK",
@@ -130,7 +143,7 @@ export default function RandomSeriesPage() {
           mode: "Slayer",
           mode_id: slayerMode.id,
           mode_name: "Slayer",
-          kind: "SLAYER_MAP",
+          kind: "SLAYER_MAP",  // Make sure this is set
           team: i % 2 === 0 ? "A" : "B"
         });
       }
@@ -150,7 +163,7 @@ export default function RandomSeriesPage() {
     setTimeout(() => {
       setRandomSeries(newSeries);
       setIsLoading(false);
-    }, 10); // Short timeout to avoid UI freezing
+    }, 10);
     
     return newSeries;
   }, [seriesType]);
@@ -187,8 +200,9 @@ export default function RandomSeriesPage() {
           className="bg-gray-700 text-white p-2 rounded"
           disabled={isLoading}
         >
-          <option value="Bo7">Best of 7</option>
+          <option value="Bo3">Best of 3</option>
           <option value="Bo5">Best of 5</option>
+          <option value="Bo7">Best of 7</option>
         </select>
       </div>
       
@@ -204,15 +218,6 @@ export default function RandomSeriesPage() {
           />
         </div>
       ) : null}
-      
-      {!isLoading && randomSeries && (
-        <div className="mt-6 bg-gray-800 p-4 rounded">
-          <h2 className="text-xl font-bold text-white mb-3">Debug: Generated Series</h2>
-          <pre className="bg-gray-900 p-4 rounded text-green-400 overflow-auto max-h-96">
-            {JSON.stringify(randomSeries, null, 2)}
-          </pre>
-        </div>
-      )}
     </div>
   );
 }

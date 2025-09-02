@@ -5,6 +5,7 @@ html,
 body,
 #root {
   height: 100%;
+  font-family: 'Lato', 'sans-serif';
 }
 
 body {

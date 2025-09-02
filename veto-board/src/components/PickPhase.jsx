@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
+import { ChevronDown, ChevronUp, Flag, Castle, Skull, Crown, Bomb, Target } from "lucide-react";
 import { getGroupedCombos, getAllMaps, API_BASE } from "../lib/api";
 import { currentPickerSide, currentPickerLabel } from "../lib/turn";
 import { 
@@ -59,21 +60,15 @@ export default function PickPhase({ series, onSuccess }) {
     
     return maps
       .filter(m => {
-        // Only include maps that support Slayer
+        // Use the shared utility function for consistent Slayer detection
         if (!m?.modes || !Array.isArray(m.modes)) return false;
-        return m.modes.some(mode =>
-          (typeof mode === "string" && mode.toLowerCase() === "slayer") ||
-          (typeof mode === "object" && mode?.name?.toLowerCase() === "slayer")
-        );
+        return m.modes.some(mode => isSlayerMode(mode));
       })
       .map(m => {
         const mapId = Number(m.id);
         // A map cannot be both banned and picked - ban takes precedence
         const isBanned = slayerBannedMapIds.has(mapId);
         const isPicked = !isBanned && pickedMapIds.has(mapId);
-        
-        // Debug info to help diagnose the issue
-        console.log(`Map ${m.name || m.map} (${mapId}): banned=${isBanned}, picked=${isPicked}`);
         
         return {
           id: mapId,
@@ -98,9 +93,8 @@ export default function PickPhase({ series, onSuccess }) {
       .filter(modeGroup => {
         // Skip empty groups and slayer modes
         if (!modeGroup.combos || modeGroup.combos.length === 0) return false;
-        const modeName = (modeGroup.mode || "").toLowerCase();
-        if (modeName.includes("slayer")) return false;
-        return true;
+        // Use isSlayerMode instead of manual string check
+        return !isSlayerMode(modeGroup.mode);
       })
       .map(modeGroup => {
         const modeId = Number(getModeId(modeGroup));
@@ -121,7 +115,12 @@ export default function PickPhase({ series, onSuccess }) {
           };
         });
         
-        return { ...modeGroup, combos: processedCombos };
+        return { 
+          ...modeGroup, 
+          // Use getModeName for consistent mode name display
+          mode: getModeName(modeGroup) || modeGroup.mode,
+          combos: processedCombos 
+        };
       });
   }, [groupedCombos, bannedCombinations, pickedCombinations, pickedMapIds]);
 
@@ -175,6 +174,49 @@ export default function PickPhase({ series, onSuccess }) {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Add state to track expanded/collapsed sections
+  const [expandedSections, setExpandedSections] = useState({
+    availableSelections: true,
+    objectiveModes: true
+  });
+
+  // Toggle function for any section
+  const toggleSection = (section) => {
+    setExpandedSections(prev => ({
+      ...prev,
+      [section]: !prev[section]
+    }));
+  };
+
+  // Function to render mode icons
+  const renderModeIcon = (modeName) => {
+    const iconProps = { 
+      size: 18, 
+      className: "transition-transform hover:scale-110" 
+    };
+    
+    const lowerModeName = String(modeName).toLowerCase();
+    
+    if (lowerModeName.includes('flag')) {
+      return <Flag {...iconProps} className={`${iconProps.className} text-blue-400`} />;
+    } else if (lowerModeName.includes('stronghold')) {
+      return <Castle {...iconProps} className={`${iconProps.className} text-purple-400`} />;
+    } else if (lowerModeName.includes('slayer')) {
+      // CHANGED: Use Target icon for Slayer instead of Skull
+      return <Target {...iconProps} className={`${iconProps.className} text-red-400`} />;
+    } else if (lowerModeName.includes('king')) {
+      return <Crown {...iconProps} className={`${iconProps.className} text-yellow-400`} />;
+    } else if (lowerModeName.includes('bomb')) {
+      return <Bomb {...iconProps} className={`${iconProps.className} text-orange-400`} />;
+    } else if (lowerModeName.includes('oddball')) {
+      // CHANGED: Use Skull icon for Oddball instead of Target
+      return <Skull {...iconProps} className={`${iconProps.className} text-green-400`} />;
+    }
+    
+    // Default icon if no match
+    return <div className="w-[18px] h-[18px]" />;
   };
 
   return (
@@ -251,7 +293,10 @@ export default function PickPhase({ series, onSuccess }) {
               <p className="text-gray-300">Select an objective mode/map combination:</p>
               {processedObjectiveCombos.map((modeGroup) => (
                 <div key={modeGroup.mode_id} className="bg-gray-700 p-4 rounded">
-                  <h4 className="font-semibold text-green-400 mb-3">{modeGroup.mode}</h4>
+                  <h4 className="font-semibold text-green-400 mb-3 flex items-center">
+                    {renderModeIcon(modeGroup.mode)}
+                    <span className="ml-2">{modeGroup.mode}</span>
+                  </h4>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
                     {modeGroup.combos.map(combo => (
                       <button
@@ -291,63 +336,102 @@ export default function PickPhase({ series, onSuccess }) {
             </div>
           )}
 
-          {/* Simplified Selection Area */}
+          {/* Collapsible Available Selections */}
           {turn?.action === "PICK" && (
             <div className="mt-8 border-t border-gray-700 pt-6">
-              <h4 className="text-lg font-semibold text-blue-400 mb-4">Available Selections</h4>
+              <div 
+                className="flex items-center justify-between cursor-pointer" 
+                onClick={() => toggleSection('availableSelections')}
+              >
+                <h4 className="text-lg font-semibold text-blue-400 mb-0">Available Selections</h4>
+                {expandedSections.availableSelections ? (
+                  <ChevronUp className="text-blue-400 h-5 w-5" />
+                ) : (
+                  <ChevronDown className="text-blue-400 h-5 w-5" />
+                )}
+              </div>
               
-              {isSlayer && (
-                <div className="bg-gray-700/50 p-4 rounded">
-                  <p className="mb-3 font-medium text-blue-400">Slayer Maps</p>
-                  <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 gap-2">
-                    {availableSlayerMaps.length > 0 ? (
-                      availableSlayerMaps.map(map => (
-                        <button
-                          key={map.id}
-                          onClick={() => handlePick({ mapId: map.id })}
-                          disabled={loading}
-                          className="px-3 py-2 bg-blue-700 hover:bg-blue-600 text-white rounded text-sm transition-colors"
-                        >
-                          {map.name}
-                        </button>
-                      ))
-                    ) : (
-                      <div className="col-span-full text-gray-400">
-                        No available Slayer maps to pick
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-              
-              {isObjective && (
-                <div className="bg-gray-700/50 p-4 rounded">
-                  <p className="mb-3 font-medium text-green-400">Objective Modes</p>
-                  <div className="grid grid-cols-1 gap-4">
-                    {availableObjectiveCombos.length > 0 ? (
-                      availableObjectiveCombos.map(modeGroup => (
-                        <div key={modeGroup.mode_id} className="bg-gray-800/50 p-3 rounded">
-                          <h5 className="font-medium text-green-300 mb-2">{modeGroup.mode}</h5>
-                          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
-                            {modeGroup.combos.map(combo => (
-                              <button
-                                key={combo.map_id}
-                                onClick={() => handlePick({ mapId: combo.map_id, modeId: modeGroup.mode_id })}
-                                disabled={loading}
-                                className="px-3 py-2 bg-green-700 hover:bg-green-600 text-white rounded text-sm transition-colors"
-                              >
-                                {combo.map}
-                              </button>
-                            ))}
+              {expandedSections.availableSelections && (
+                <div className="mt-4 transition-all duration-300">
+                  {isSlayer && (
+                    <div className="bg-gray-700/50 p-4 rounded">
+                      <p className="mb-3 font-medium text-blue-400">Slayer Maps</p>
+                      <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 gap-2">
+                        {availableSlayerMaps.length > 0 ? (
+                          availableSlayerMaps.map(map => (
+                            <button
+                              key={map.id}
+                              onClick={() => handlePick({ mapId: map.id })}
+                              disabled={loading}
+                              className="px-3 py-2 bg-blue-700 hover:bg-blue-600 text-white rounded text-sm transition-colors"
+                            >
+                              {map.name}
+                            </button>
+                          ))
+                        ) : (
+                          <div className="col-span-full text-gray-400">
+                            No available Slayer maps to pick
                           </div>
-                        </div>
-                      ))
-                    ) : (
-                      <div className="text-center text-gray-400">
-                        No available objective combinations to pick
+                        )}
                       </div>
-                    )}
-                  </div>
+                    </div>
+                  )}
+                  
+                  {isObjective && (
+                    <div className="bg-gray-700/50 p-4 rounded mt-4">
+                      <div 
+                        className="flex items-center justify-between cursor-pointer" 
+                        onClick={(e) => {
+                          e.stopPropagation(); // Prevent parent handler from triggering
+                          toggleSection('objectiveModes');
+                        }}
+                      >
+                        <p className="mb-0 font-medium text-green-400 flex items-center">
+                          <Target size={16} className="mr-2 text-green-400" />
+                          <span>Objective Modes</span>
+                        </p>
+                        {expandedSections.objectiveModes ? (
+                          <ChevronUp className="text-green-400 h-4 w-4" />
+                        ) : (
+                          <ChevronDown className="text-green-400 h-4 w-4" />
+                        )}
+                      </div>
+                      
+                      {expandedSections.objectiveModes && (
+                        <div className="grid grid-cols-1 gap-4 mt-3">
+                          {availableObjectiveCombos.length > 0 ? (
+                            availableObjectiveCombos.map(modeGroup => (
+                              <div key={modeGroup.mode_id} className="bg-gray-800/50 p-3 rounded">
+                                <h5 className="font-medium text-green-300 mb-2 flex items-center">
+                                  {renderModeIcon(modeGroup.mode)}
+                                  <span className="ml-2">{modeGroup.mode}</span>
+                                </h5>
+                                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+                                  {modeGroup.combos.map(combo => (
+                                    <button
+                                      key={combo.map_id}
+                                      onClick={() => handlePick({ mapId: combo.map_id, modeId: modeGroup.mode_id })}
+                                      disabled={loading}
+                                      className="px-3 py-2 bg-green-700 hover:bg-green-600 text-white rounded text-sm transition-colors group"
+                                    >
+                                      <div className="flex items-center justify-center">
+                                        <Target size={14} className="mr-1 text-green-300 transition-transform group-hover:scale-110" />
+                                        <span>{combo.map}</span>
+                                      </div>
+                                    </button>
+                                  ))}
+                                </div>
+                              </div>
+                            ))
+                          ) : (
+                            <div className="text-center text-gray-400">
+                              No available objective combinations to pick
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               )}
             </div>

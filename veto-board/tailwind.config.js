@@ -19,7 +19,8 @@ export default {
         },
       },
       fontFamily: {
-        sans: ['Inter', 'system-ui', 'sans-serif'],
+        // Changed from Inter to Lato
+        sans: ['Lato', 'system-ui', 'sans-serif'],
       },
       borderRadius: {
         lg: '0.75rem',

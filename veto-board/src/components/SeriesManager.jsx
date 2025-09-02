@@ -32,8 +32,17 @@ export default function SeriesManager({ seriesId, onSuccess }) {
       console.log("[DEBUG] Loading series data...");
       const data = await getSeries(seriesId);
       console.log("[DEBUG] Series data loaded:", data);
-      console.log("[DEBUG] Actions:", data.actions);
+      console.log("[DEBUG] Actions count:", data.actions?.length);
+      console.log("[DEBUG] First 3 actions:", data.actions?.slice(0, 3));
+
       setSeries(data);
+
+      // Process bans right after loading
+      if (data?.actions) {
+        const banData = processBansAndPicks(data.actions);
+        setProcessedBanData(banData);
+        console.log("[DEBUG] Processed ban data:", banData);
+      }
     } catch (err) {
       console.error("[DEBUG] Error loading series:", err);
       setError("Could not load series.");

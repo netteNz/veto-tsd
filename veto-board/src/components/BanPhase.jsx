@@ -39,7 +39,7 @@ export default function BanPhase({ series, onSuccess }) {
 
     console.log("[DEBUG] Submitting veto:", {
       seriesId: series.id,
-      teamIdentifier, // Changed from team name to identifier
+      teamIdentifier, 
       selectedMap,
       selectedMode,
       kind,
@@ -48,12 +48,18 @@ export default function BanPhase({ series, onSuccess }) {
     try {
       const res = await postVeto(
         series.id,
-        teamIdentifier, // Pass "A" or "B", not the team name
+        teamIdentifier,
         selectedMap,
         selectedMode
       );
       console.log("[DEBUG] veto posted:", res);
-      onSuccess(); // reload series
+      console.log("[DEBUG] Calling onSuccess to reload series...");
+      
+      // Add a small delay to make sure UI updates properly
+      setTimeout(() => {
+        onSuccess(); // reload series
+      }, 100);
+      
     } catch (err) {
       console.error("[DEBUG] Ban failed:", err);
       console.error("[DEBUG] Error details:", err.response?.data);
@@ -134,14 +140,6 @@ export default function BanPhase({ series, onSuccess }) {
           {currentTeam === "A" ? series.team_a : series.team_b}
         </span>{" "}
         — banning an {isObjectiveCombo ? "Objective combo" : "Slayer map"}
-      </div>
-
-      {/* Enhanced debugging info */}
-      <div className="text-xs text-gray-400 space-y-1">
-        <div>DEBUG: Selected Map: {selectedMap}, Mode: {selectedMode}</div>
-        <div>DEBUG: Available: {available.length}, Kind: "{kind}"</div>
-        <div>DEBUG: Is Objective: {isObjectiveCombo ? "YES" : "NO"}</div>
-        <div>DEBUG: Team Identifier: "{currentTeam}", Series ID: {series.id}</div>
       </div>
 
       <div className="flex flex-col gap-4">
