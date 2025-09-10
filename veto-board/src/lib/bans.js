@@ -52,65 +52,84 @@ export const isSlayerMode = (modeVal) => {
 export function processBansAndPicks(actions) {
   const bans = actions?.filter(a => a.action_type === "BAN") || [];
   const picks = actions?.filter(a => a.action_type === "PICK") || [];
-  
-  const bannedCombinations = new Set();  
-  const slayerBannedMapIds = new Set();  
-  const pickedMapIds = new Set();        
-  const pickedCombinations = new Set();  
-  
-  // Process bans with improved Slayer detection
+
+  const bannedCombinations = new Set();
+  const slayerBannedMapIds = new Set();
+  const pickedMapIds = new Set();
+  const pickedCombinations = new Set();
+  const slayerPickedMapIds = new Set();
+  const objectivePickedMapIds = new Set();
+
+  // Process bans with BETTER Slayer detection
   for (const ban of bans) {
     const mapId = Number(getMapId(ban));
     if (!mapId) continue;
     
-    // Enhanced check for Slayer bans
-    if (
-      // Check if the ban's kind is SLAYER_MAP
-      ban.kind === "SLAYER_MAP" || 
-      // Check if mode is Slayer
-      isSlayerMode(ban.mode) || 
-      // Check mode_name
-      isSlayerMode(ban.mode_name) ||
-      // Check if this is a ban without a mode_id (likely a Slayer ban)
-      (!getModeId(ban) && ban.action_type === "BAN")
-    ) {
+    console.log(`[DEBUG] Processing ban:`, ban);
+    
+    // ENHANCED: Check for Slayer bans more thoroughly
+    const isSlayerBan = 
+      ban.kind === "SLAYER_MAP" ||
+      ban.ban_type === "SLAYER_MAP" ||
+      (ban.mode_id === 6) ||
+      (ban.mode === "Slayer") ||
+      (ban.mode_name === "Slayer") ||
+      (typeof ban.mode === 'string' && ban.mode.toLowerCase() === "slayer") ||
+      (typeof ban.mode_name === 'string' && ban.mode_name.toLowerCase() === "slayer") ||
+      // NEW: If no mode info at all, and we can determine from context it's slayer
+      (!ban.mode_id && !ban.mode && !ban.mode_name && ban.map_id);
+    
+    console.log(`[DEBUG] Map ${ban.map} (ID: ${mapId}) - isSlayerBan: ${isSlayerBan}`);
+    
+    if (isSlayerBan) {
       slayerBannedMapIds.add(mapId);
-    }
-    // Otherwise track as an objective ban with mode
-    else {
+      console.log(`[DEBUG] Added to slayer banned: ${mapId}`);
+    } else {
       const modeId = Number(getModeId(ban));
       if (modeId) {
         bannedCombinations.add(`${mapId}:${modeId}`);
+        console.log(`[DEBUG] Added to objective banned: ${mapId}:${modeId}`);
       }
     }
   }
   
-  // Process picks (unchanged)
+  // Process picks with STRICTER classification
   for (const pick of picks) {
     const mapId = Number(getMapId(pick));
     if (!mapId) continue;
-    
+
     pickedMapIds.add(mapId);
-    
+
     const modeId = Number(getModeId(pick));
     if (modeId) {
       pickedCombinations.add(`${mapId}:${modeId}`);
     }
+
+    // SIMPLIFIED: Use kind field first for picks too
+    const isSlayerPick = 
+      pick.kind === "SLAYER_MAP" ||
+      (pick.mode_id === 6) ||
+      (typeof pick.mode === 'string' && pick.mode.toLowerCase() === "slayer") ||
+      (typeof pick.mode_name === 'string' && pick.mode_name.toLowerCase() === "slayer");
+
+    if (isSlayerPick) {
+      slayerPickedMapIds.add(mapId);
+      console.log(`[DEBUG] Classified as SLAYER pick: ${pick.map}`);
+    } else {
+      objectivePickedMapIds.add(mapId);
+      console.log(`[DEBUG] Classified as OBJECTIVE pick: ${pick.map} + ${pick.mode || pick.mode_name}`);
+    }
   }
   
-  console.log("Slayer banned map IDs:", Array.from(slayerBannedMapIds));
-  console.log("Maps banned for specific modes:", 
-    Array.from(bannedCombinations).map(combo => {
-      const [mapId, modeId] = combo.split(':');
-      return { mapId: Number(mapId), modeId: Number(modeId) };
-    })
-  );
+  console.log("DEBUG - Final slayer banned map IDs:", Array.from(slayerBannedMapIds));
   
   return {
     bannedCombinations,
     slayerBannedMapIds,
-    pickedMapIds,
-    pickedCombinations
+    pickedMapIds,           
+    pickedCombinations,
+    slayerPickedMapIds,
+    objectivePickedMapIds,
   };
 }
 

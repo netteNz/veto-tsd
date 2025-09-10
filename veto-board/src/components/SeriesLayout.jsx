@@ -28,8 +28,8 @@ export default function SeriesLayout({ series, onSuccess }) {
   const {
     bannedCombinations,
     slayerBannedMapIds,
-    pickedMapIds,
-    pickedCombinations
+    pickedCombinations,        // CHANGED: Use this instead of pickedMapIds/objectivePickedMapIds
+    slayerPickedMapIds,
   } = useMemo(() => {
     return processBansAndPicks(series?.actions || []);
   }, [series?.actions]);
@@ -73,20 +73,48 @@ export default function SeriesLayout({ series, onSuccess }) {
     setLoadingPick(true); setPickError("");
     try {
       const endpoint = turn.kind === "OBJECTIVE_COMBO" ? "pick_objective_combo" : "pick_slayer_map";
-      const body = turn.kind === "OBJECTIVE_COMBO"
-        ? { map: Number(mapId), mode: Number(modeId) }
-        : { map: Number(mapId) };
+      const team = series?.turn?.team;
+
+      // Build tolerant payload (include both *_id and bare keys)
+      const payload =
+        turn.kind === "OBJECTIVE_COMBO"
+          ? {
+              team,
+              map_id: Number(mapId),
+              map: Number(mapId),
+              objective_mode_id: Number(modeId),
+              mode_id: Number(modeId),
+              objective_mode: Number(modeId),
+            }
+          : {
+              team,
+              map_id: Number(mapId),
+              map: Number(mapId),
+            };
+
+      // Validate before sending
+      if (!payload.team || !payload.map_id || (turn.kind === "OBJECTIVE_COMBO" && !payload.objective_mode_id)) {
+        setPickError("team, map_id and objective_mode_id are required");
+        setLoadingPick(false);
+        return;
+      }
+
+      console.log("[DEBUG] Sending pick:", { endpoint, payload });
 
       const res = await fetch(`${API_BASE}/series/${series.id}/${endpoint}/`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
+        body: JSON.stringify(payload),
       });
 
       if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.detail || "Pick failed");
+        const text = await res.text().catch(() => "");
+        console.error("[DEBUG] Pick failed. Status:", res.status, "Body:", text);
+        let msg = "Pick failed";
+        try { msg = (JSON.parse(text)?.detail) || msg; } catch {}
+        throw new Error(msg);
       }
+
       setOpenPickGame(null);
       onSuccess?.();
     } catch (e) {
@@ -168,13 +196,13 @@ export default function SeriesLayout({ series, onSuccess }) {
   const availableSlayerMaps = useMemo(() => {
     return (mapsList || []).filter(m => {
       const mapId = Number(m.id);
-      const supports = m?.modes?.some(md => 
-        (typeof md === "string" && md.toLowerCase() === "slayer") || 
+      const supports = m?.modes?.some(md =>
+        (typeof md === "string" && md.toLowerCase() === "slayer") ||
         (md?.name?.toLowerCase() === "slayer")
       );
-      return supports && !slayerBannedMapIds.has(mapId) && !pickedMapIds.has(mapId);
+      return supports && !slayerBannedMapIds.has(mapId) && !slayerPickedMapIds.has(mapId);
     });
-  }, [mapsList, slayerBannedMapIds, pickedMapIds]);
+  }, [mapsList, slayerBannedMapIds, slayerPickedMapIds]);
 
   // In SeriesLayout.jsx where you render the Game Layout
   const getGameMode = (action) => {

@@ -44,12 +44,12 @@ export default function PickPhase({ series, onSuccess }) {
     loadData();
   }, []);
 
-  // Get ban and pick data using shared utility
+  // Use the shared utility to process bans and picks  
   const {
-    bannedCombinations,    // Set of "mapId:modeId" strings
-    slayerBannedMapIds,    // Set of map IDs banned for Slayer
-    pickedMapIds,          // All picked map IDs (any mode) 
-    pickedCombinations     // Set of "mapId:modeId" strings for picks
+    bannedCombinations,
+    slayerBannedMapIds,
+    pickedCombinations,        // CHANGED: Use this instead of pickedMapIds
+    slayerPickedMapIds,
   } = useMemo(() => {
     return processBansAndPicks(series?.actions || []);
   }, [series?.actions]);
@@ -57,19 +57,16 @@ export default function PickPhase({ series, onSuccess }) {
   // Process all slayer maps, including banned ones (for display)
   const allSlayerMaps = useMemo(() => {
     if (!maps.length) return [];
-    
     return maps
       .filter(m => {
-        // Use the shared utility function for consistent Slayer detection
         if (!m?.modes || !Array.isArray(m.modes)) return false;
         return m.modes.some(mode => isSlayerMode(mode));
       })
       .map(m => {
         const mapId = Number(m.id);
-        // A map cannot be both banned and picked - ban takes precedence
         const isBanned = slayerBannedMapIds.has(mapId);
-        const isPicked = !isBanned && pickedMapIds.has(mapId);
-        
+        // CHANGED: only consider Slayer picks here
+        const isPicked = !isBanned && slayerPickedMapIds.has(mapId);
         return {
           id: mapId,
           name: m.name || m.map || `Map ${mapId}`,
@@ -78,7 +75,7 @@ export default function PickPhase({ series, onSuccess }) {
           disabled: isBanned || isPicked
         };
       });
-  }, [maps, slayerBannedMapIds, pickedMapIds]);
+  }, [maps, slayerBannedMapIds, slayerPickedMapIds]);
 
   // Available Slayer maps (for selection - filtered)
   const availableSlayerMaps = useMemo(() => {
@@ -88,50 +85,34 @@ export default function PickPhase({ series, onSuccess }) {
   // Process objective combos
   const processedObjectiveCombos = useMemo(() => {
     if (!groupedCombos?.objective) return [];
-    
     return groupedCombos.objective
       .filter(modeGroup => {
-        // Skip empty groups and slayer modes
         if (!modeGroup.combos || modeGroup.combos.length === 0) return false;
-        // Use isSlayerMode instead of manual string check
         return !isSlayerMode(modeGroup.mode);
       })
       .map(modeGroup => {
         const modeId = Number(getModeId(modeGroup));
         const processedCombos = (modeGroup.combos || []).map(combo => {
           const mapId = Number(getMapId(combo));
-          
-          // Check for specific combination bans/picks
           const comboKey = `${mapId}:${modeId}`;
           const isBanned = bannedCombinations.has(comboKey);
-          const isPicked = pickedCombinations.has(comboKey);
-          const isMapPicked = pickedMapIds.has(mapId);
-          
-          return {
-            ...combo,
-            isBanned,
-            isPicked,
-            disabled: isBanned || isPicked || isMapPicked
-          };
+          const isPicked = pickedCombinations.has(comboKey); // CHANGED: Use exact combo check
+          return { ...combo, isBanned, isPicked, disabled: isBanned || isPicked };
         });
-        
         return { 
           ...modeGroup, 
-          // Use getModeName for consistent mode name display
           mode: getModeName(modeGroup) || modeGroup.mode,
           combos: processedCombos 
         };
       });
-  }, [groupedCombos, bannedCombinations, pickedCombinations, pickedMapIds]);
+  }, [groupedCombos, bannedCombinations, pickedCombinations]); // CHANGED: Updated dependencies
 
   // Available objective combos (for selection)
   const availableObjectiveCombos = useMemo(() => {
-    return processedObjectiveCombos
-      .filter(modeGroup => modeGroup.combos.some(c => !c.disabled))
-      .map(modeGroup => ({
-        ...modeGroup,
-        combos: modeGroup.combos.filter(c => !c.disabled)
-      }));
+    return processedObjectiveCombos.map(modeGroup => {
+      const availableCombos = modeGroup.combos.filter(combo => !combo.disabled);
+      return availableCombos.length ? { ...modeGroup, combos: availableCombos } : null;
+    }).filter(Boolean);
   }, [processedObjectiveCombos]);
 
   const handlePick = async ({ mapId, modeId }) => {
@@ -144,27 +125,43 @@ export default function PickPhase({ series, onSuccess }) {
     const endpoint = kind === "OBJECTIVE_COMBO" ? "pick_objective_combo" : "pick_slayer_map";
     const team = series?.turn?.team;
 
-    const body =
+    const payload =
       kind === "OBJECTIVE_COMBO"
-        ? { team, map: Number(mapId), mode: Number(modeId) }
-        : { team, map: Number(mapId) };
+        ? {
+            team,
+            map_id: Number(mapId),
+            map: Number(mapId),
+            objective_mode_id: Number(modeId),
+            mode_id: Number(modeId),
+            objective_mode: Number(modeId),
+          }
+        : {
+            team,
+            map_id: Number(mapId),
+            map: Number(mapId),
+          };
 
-    if (!team || !body.map || (kind === "OBJECTIVE_COMBO" && !body.mode)) {
-      setError("team, map, and mode are required");
+    if (!payload.team || !payload.map_id || (kind === "OBJECTIVE_COMBO" && !payload.objective_mode_id)) {
+      setError("team, map_id and objective_mode_id are required");
       setLoading(false);
       return;
     }
+
+    console.log("[DEBUG] Sending pick:", { endpoint, payload });
 
     try {
       const res = await fetch(`${API_BASE}/series/${series.id}/${endpoint}/`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
+        body: JSON.stringify(payload),
       });
 
       if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.detail || "Pick failed");
+        const text = await res.text().catch(() => "");
+        console.error("[DEBUG] Pick failed. Status:", res.status, "Body:", text);
+        let msg = "Pick failed";
+        try { msg = (JSON.parse(text)?.detail) || msg; } catch {}
+        throw new Error(msg);
       }
 
       onSuccess?.();

@@ -38,7 +38,7 @@ export default function RandomSeriesPage() {
       gamePattern = [true, false, true, true, false]; // Obj, Slayer, Obj, Obj, Slayer
     } else { // Bo7
       totalGames = 7;
-      // Updated pattern: obj, slayer, obj, obj, slayer, obj, slayer
+      // Pattern needs to be: obj, slayer, obj, obj, slayer, obj, slayer
       gamePattern = [true, false, true, true, false, true, false];  
     }
     
@@ -72,6 +72,7 @@ export default function RandomSeriesPage() {
         mode: mode.name,
         mode_id: mode.id,
         mode_name: mode.name,
+        kind: "OBJECTIVE_COMBO", // Add this explicit kind
         team: i % 2 === 0 ? "A" : "B"
       });
     }
@@ -159,6 +160,10 @@ export default function RandomSeriesPage() {
       team_a: "Team A",
       team_b: "Team B"
     };
+    
+    // After generating all actions
+    console.log("Generated pattern:", gamePattern);
+    console.log("Generated picks:", actions.filter(a => a.action_type === "PICK").map(p => p.kind));
     
     setTimeout(() => {
       setRandomSeries(newSeries);
