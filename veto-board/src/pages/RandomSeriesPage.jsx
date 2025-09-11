@@ -42,8 +42,14 @@ export default function RandomSeriesPage() {
       gamePattern = [true, false, true, true, false, true, false];  
     }
     
-    const totalBans = seriesType === "Bo7" ? 7 : seriesType === "Bo5" ? 5 : 3;
-    const objectiveBans = seriesType === "Bo7" ? 5 : seriesType === "Bo5" ? 3 : 2;
+    // 👇 FIX: ban counts should be 3 obj + 1 slayer =3 total for Bo3,
+    //                                        3 obj + 2 slayer =5 total for Bo5/Bo7
+    const banConfig = {
+      Bo3: { totalBans: 3, objectiveBans: 2 },
+      Bo5: { totalBans: 5, objectiveBans: 3 },
+      Bo7: { totalBans: 5, objectiveBans: 3 },
+    };
+    const { totalBans, objectiveBans } = banConfig[seriesType];
     const slayerBans = totalBans - objectiveBans;
     
     // Generate bans
@@ -57,15 +63,15 @@ export default function RandomSeriesPage() {
       do {
         mapName = maps[Math.floor(Math.random() * maps.length)];
         attempts++;
-        if (attempts > 100) break;
-      } while (usedMaps.has(`${mapName}-objective`));
+        if (attempts > 50) break;
+      } while (usedMaps.has(`${mapName}-obj`));
       
-      usedMaps.add(`${mapName}-objective`);
+      usedMaps.add(`${mapName}-obj`);
       
       const mode = objectiveModes[Math.floor(Math.random() * objectiveModes.length)];
       
       actions.push({
-        id: i + 1,
+        id: `ban_obj_${i+1}`,
         action_type: "BAN",
         map: mapName,
         map_id: maps.indexOf(mapName) + 1,
@@ -84,13 +90,13 @@ export default function RandomSeriesPage() {
       do {
         mapName = maps[Math.floor(Math.random() * maps.length)];
         attempts++;
-        if (attempts > 100) break;
+        if (attempts > 50) break;
       } while (usedMaps.has(`${mapName}-slayer`));
       
       usedMaps.add(`${mapName}-slayer`);
       
       actions.push({
-        id: objectiveBans + i + 1,
+        id: `ban_slayer_${i+1}`,
         action_type: "BAN",
         map: mapName,
         map_id: maps.indexOf(mapName) + 1,
@@ -114,7 +120,7 @@ export default function RandomSeriesPage() {
       do {
         mapName = maps[Math.floor(Math.random() * maps.length)];
         attempts++;
-        if (attempts > 100) break;
+        if (attempts > 50) break;
       } while (pickedMaps.has(mapName));
       
       pickedMaps.add(mapName);
@@ -124,7 +130,7 @@ export default function RandomSeriesPage() {
         const mode = objectiveModes[Math.floor(Math.random() * objectiveModes.length)];
         
         actions.push({
-          id: totalBans + i + 1,
+          id: `pick_obj_${i+1}`,
           action_type: "PICK",
           map: mapName,
           map_id: maps.indexOf(mapName) + 1,
@@ -137,7 +143,7 @@ export default function RandomSeriesPage() {
       } else {
         // For slayer games
         actions.push({
-          id: totalBans + i + 1,
+          id: `pick_slayer_${i+1}`,
           action_type: "PICK",
           map: mapName,
           map_id: maps.indexOf(mapName) + 1,

@@ -1,6 +1,6 @@
 import React, { useMemo } from "react";
 import ComboPicker from "./ComboPicker";
-import { processBansAndPicks } from "../lib/bans";
+import { processBansAndPicks, isComboBanned, isComboPicked, getMapId, getModeId } from "../lib/bans";
 
 export default function AvailableCombos({
   series = {},
@@ -11,22 +11,12 @@ export default function AvailableCombos({
   loading = false,
   slayerMapsOverride = null,
 }) {
-  const {
-    bannedCombinations,
-    slayerBannedMapIds,
-    pickedCombinations,        // Use this instead of objectivePickedMapIds
-    slayerPickedMapIds,
-  } = useMemo(() => {
+  // Get processed ban/pick data
+  const banPickData = useMemo(() => {
     return processBansAndPicks(series.actions || []);
   }, [series.actions]);
 
-  const getMapId = (x) => 
-    x?.map_id || x?.map?.id || x?.map || x?.id || x?.pk || null;
-
-  const getModeId = (x) => 
-    x?.mode_id || x?.mode?.id || x?.mode || null;
-
-  // FIXED: Check exact map+mode combinations, not just maps
+  // FIXED: Use helper functions for objective combos
   const availableObjectiveCombos = useMemo(() => {
     if (!groupedCombos?.objective) return [];
     return groupedCombos.objective
@@ -41,40 +31,30 @@ export default function AvailableCombos({
         const availableCombos = (modeGroup.combos || [])
           .filter(combo => {
             const mapId = Number(getMapId(combo));
-            if (!mapId) return false;
+            if (!mapId || !modeId) return false;
             
-            // FIXED: Check if this exact map+mode combo was picked or banned
-            const comboKey = `${mapId}:${modeId}`;
-            if (bannedCombinations.has(comboKey)) return false;
-            if (pickedCombinations.has(comboKey)) return false; // This is the key fix
-            
-            return true;
+            // FIXED: Use helper functions
+            return !isComboBanned(mapId, modeId, banPickData) && 
+                   !isComboPicked(mapId, modeId, banPickData);
           })
           .map(combo => ({ ...combo, map_id: Number(getMapId(combo)), mode_id: modeId }));
         return availableCombos.length ? { ...modeGroup, combos: availableCombos } : null;
       })
       .filter(Boolean);
-  }, [groupedCombos, bannedCombinations, pickedCombinations]); // Updated dependencies
+  }, [groupedCombos, banPickData]);
 
-  // Slayer logic remains the same - it should block maps used in ANY Slayer round
+  // FIXED: Use helper functions for slayer maps
   const availableSlayerMaps = useMemo(() => {
     if (slayerMapsOverride && Array.isArray(slayerMapsOverride)) return slayerMapsOverride;
     return (mapsList || []).filter((m) => {
       const mapId = Number(getMapId(m));
       if (!mapId) return false;
-      if (slayerBannedMapIds.has(mapId)) return false;
-      if (slayerPickedMapIds.has(mapId)) return false; // Block maps used in Slayer rounds
-      if (m.modes && Array.isArray(m.modes)) {
-        return m.modes.some(mode => {
-          if (typeof mode === "string") return mode.toLowerCase().includes("slayer");
-          if (typeof mode === "object" && mode.name) return mode.name.toLowerCase().includes("slayer");
-          if (typeof mode === "number" || typeof mode === "string") return [6, "6", "slayer"].includes(mode);
-          return false;
-        });
-      }
-      return false;
+      
+      // FIXED: Use helper function (mode ID 6 = Slayer)
+      return !isComboBanned(mapId, 6, banPickData) && 
+             !isComboPicked(mapId, 6, banPickData);
     });
-  }, [mapsList, slayerBannedMapIds, slayerPickedMapIds, slayerMapsOverride]);
+  }, [mapsList, banPickData, slayerMapsOverride]);
 
   return (
     <div>

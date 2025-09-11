@@ -2,38 +2,23 @@
  * Utility functions for processing bans and picks in a consistent way
  */
 
-/**
- * Extract map ID from various object structures
- */
 export const getMapId = (x) =>
   x?.map_id || x?.map?.id || x?.map || x?.id || x?.pk || null;
 
-/**
- * Extract mode ID from various object structures
- */
 export const getModeId = (x) => 
   x?.mode_id || x?.mode?.id || x?.mode || null;
 
-/**
- * Extract mode name consistently
- */
 export const getModeName = (x) => {
   if (!x) return "";
   if (typeof x === "string") return x;
   return x.name || x.mode || "";
 };
 
-/**
- * Check if a mode is Slayer
- */
 export const isSlayerMode = (modeVal) => {
   if (!modeVal) return false;
   
-  // If it's a direct "SLAYER_MAP" kind, it's definitely Slayer
-  if (modeVal === "SLAYER_MAP" || 
-      (typeof modeVal === "object" && modeVal.kind === "SLAYER_MAP")) {
-    return true;
-  }
+  // Check for mode ID 6 (Slayer)
+  if (modeVal === 6 || modeVal === "6") return true;
   
   // Check string values
   if (typeof modeVal === "string") {
@@ -45,10 +30,6 @@ export const isSlayerMode = (modeVal) => {
   return name.toLowerCase() === "slayer" || name.toLowerCase().includes("slayer");
 };
 
-/**
- * Process bans and picks from series actions
- * Returns consistent data structures for use across components
- */
 export function processBansAndPicks(actions) {
   const bans = actions?.filter(a => a.action_type === "BAN") || [];
   const picks = actions?.filter(a => a.action_type === "PICK") || [];
@@ -60,26 +41,23 @@ export function processBansAndPicks(actions) {
   const slayerPickedMapIds = new Set();
   const objectivePickedMapIds = new Set();
 
-  // Process bans with BETTER Slayer detection
+  // Process bans - FIXED: Rely primarily on 'kind' field
   for (const ban of bans) {
     const mapId = Number(getMapId(ban));
     if (!mapId) continue;
     
     console.log(`[DEBUG] Processing ban:`, ban);
     
-    // ENHANCED: Check for Slayer bans more thoroughly
+    // FIXED: Prioritize 'kind' field, then fallback to mode checks
     const isSlayerBan = 
       ban.kind === "SLAYER_MAP" ||
-      ban.ban_type === "SLAYER_MAP" ||
       (ban.mode_id === 6) ||
       (ban.mode === "Slayer") ||
       (ban.mode_name === "Slayer") ||
-      (typeof ban.mode === 'string' && ban.mode.toLowerCase() === "slayer") ||
-      (typeof ban.mode_name === 'string' && ban.mode_name.toLowerCase() === "slayer") ||
-      // NEW: If no mode info at all, and we can determine from context it's slayer
-      (!ban.mode_id && !ban.mode && !ban.mode_name && ban.map_id);
+      isSlayerMode(ban.mode) ||
+      isSlayerMode(ban.mode_name);
     
-    console.log(`[DEBUG] Map ${ban.map} (ID: ${mapId}) - isSlayerBan: ${isSlayerBan}`);
+    console.log(`[DEBUG] Map ${ban.map} (ID: ${mapId}) - kind: ${ban.kind}, isSlayerBan: ${isSlayerBan}`);
     
     if (isSlayerBan) {
       slayerBannedMapIds.add(mapId);
@@ -93,7 +71,7 @@ export function processBansAndPicks(actions) {
     }
   }
   
-  // Process picks with STRICTER classification
+  // Process picks
   for (const pick of picks) {
     const mapId = Number(getMapId(pick));
     if (!mapId) continue;
@@ -105,23 +83,24 @@ export function processBansAndPicks(actions) {
       pickedCombinations.add(`${mapId}:${modeId}`);
     }
 
-    // SIMPLIFIED: Use kind field first for picks too
     const isSlayerPick = 
       pick.kind === "SLAYER_MAP" ||
+      pick.slot_type === "SLAYER" ||
       (pick.mode_id === 6) ||
-      (typeof pick.mode === 'string' && pick.mode.toLowerCase() === "slayer") ||
-      (typeof pick.mode_name === 'string' && pick.mode_name.toLowerCase() === "slayer");
+      isSlayerMode(pick.mode) ||
+      isSlayerMode(pick.mode_name);
 
     if (isSlayerPick) {
       slayerPickedMapIds.add(mapId);
       console.log(`[DEBUG] Classified as SLAYER pick: ${pick.map}`);
     } else {
       objectivePickedMapIds.add(mapId);
-      console.log(`[DEBUG] Classified as OBJECTIVE pick: ${pick.map} + ${pick.mode || pick.mode_name}`);
+      console.log(`[DEBUG] Classified as OBJECTIVE pick: ${pick.map}`);
     }
   }
   
   console.log("DEBUG - Final slayer banned map IDs:", Array.from(slayerBannedMapIds));
+  console.log("DEBUG - Final objective banned combinations:", Array.from(bannedCombinations));
   
   return {
     bannedCombinations,
@@ -133,24 +112,35 @@ export function processBansAndPicks(actions) {
   };
 }
 
-/**
- * Check if a specific map+mode combination is banned
- */
+// FIXED: Correct helper functions
 export function isComboBanned(mapId, modeId, banData) {
   const { bannedCombinations, slayerBannedMapIds } = banData;
+  const numMapId = Number(mapId);
+  const numModeId = Number(modeId);
   
-  // For Slayer, just check if the map is banned for Slayer
-  if (isSlayerMode({ mode: modeId })) {
-    return slayerBannedMapIds.has(Number(mapId));
+  // For Slayer (mode ID 6), check slayer banned maps
+  if (numModeId === 6 || isSlayerMode(modeId)) {
+    return slayerBannedMapIds.has(numMapId);
   }
   
-  // For other modes, check the specific combination
-  return bannedCombinations.has(`${Number(mapId)}:${Number(modeId)}`);
+  // For other modes, check specific combination
+  return bannedCombinations.has(`${numMapId}:${numModeId}`);
 }
 
-/**
- * Check if a map is picked (unavailable for any mode)
- */
-export function isMapPicked(mapId, pickData) {
-  return pickData.pickedMapIds.has(Number(mapId));
+export function isComboPicked(mapId, modeId, pickData) {
+  const { pickedCombinations, slayerPickedMapIds } = pickData;
+  const numMapId = Number(mapId);
+  const numModeId = Number(modeId);
+  
+  // For Slayer, check if map was used in any Slayer round
+  if (numModeId === 6 || isSlayerMode(modeId)) {
+    return slayerPickedMapIds.has(numMapId);
+  }
+  
+  // For objectives, check exact combination
+  return pickedCombinations.has(`${numMapId}:${numModeId}`);
+}
+
+export function isMapModeAvailable(mapId, modeId, banData, pickData) {
+  return !isComboBanned(mapId, modeId, banData) && !isComboPicked(mapId, modeId, pickData);
 }

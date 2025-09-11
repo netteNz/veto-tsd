@@ -2,7 +2,7 @@ import { useEffect, useState, useMemo } from "react";
 import { getGroupedCombos, getAllMaps, API_BASE } from "../lib/api";
 import AvailableCombos from "./AvailableCombos";
 import { currentPickerSide, currentPickerLabel } from "../lib/turn";
-import { processBansAndPicks, getMapId, getModeId, isSlayerMode, getModeName } from "../lib/bans"; // Add isSlayerMode
+import { processBansAndPicks, isComboBanned, isComboPicked, getMapId, getModeId, isSlayerMode, getModeName } from "../lib/bans"; // Add isSlayerMode
 import { 
   Flag, 
   Castle, 
@@ -24,13 +24,8 @@ export default function SeriesLayout({ series, onSuccess }) {
   const [loadingPick, setLoadingPick] = useState(false);
   const [pickError, setPickError] = useState("");
 
-  // Use the shared utility to process bans and picks
-  const {
-    bannedCombinations,
-    slayerBannedMapIds,
-    pickedCombinations,        // CHANGED: Use this instead of pickedMapIds/objectivePickedMapIds
-    slayerPickedMapIds,
-  } = useMemo(() => {
+  // Get processed ban/pick data
+  const banPickData = useMemo(() => {
     return processBansAndPicks(series?.actions || []);
   }, [series?.actions]);
   
@@ -192,7 +187,7 @@ export default function SeriesLayout({ series, onSuccess }) {
     return Array.from(uniqueMaps.values());
   }, [series?.actions]);
 
-  // Use the shared data structures for available maps
+  // FIXED: Use helper function for available slayer maps
   const availableSlayerMaps = useMemo(() => {
     return (mapsList || []).filter(m => {
       const mapId = Number(m.id);
@@ -200,9 +195,11 @@ export default function SeriesLayout({ series, onSuccess }) {
         (typeof md === "string" && md.toLowerCase() === "slayer") ||
         (md?.name?.toLowerCase() === "slayer")
       );
-      return supports && !slayerBannedMapIds.has(mapId) && !slayerPickedMapIds.has(mapId);
+      
+      // FIXED: Use helper function instead of direct set checking
+      return supports && !isComboBanned(mapId, 6, banPickData) && !isComboPicked(mapId, 6, banPickData);
     });
-  }, [mapsList, slayerBannedMapIds, slayerPickedMapIds]);
+  }, [mapsList, banPickData]);
 
   // In SeriesLayout.jsx where you render the Game Layout
   const getGameMode = (action) => {
