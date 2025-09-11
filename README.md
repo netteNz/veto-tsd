@@ -30,11 +30,11 @@ TSD Veto Tool streamlines the process of setting up competitive Halo Infinite ma
 
 ## Tech Stack
 
-React
+- React
 
-Vite
+- Vite
 
-Tailwind CSS
+- Tailwind CSS
 
 
 
@@ -63,10 +63,6 @@ npm run preview
 [ ] Export veto layout (image/PDF for sharing)
 
 [ ] Improve mobile UX (responsive veto board)
-
-[ ] Add live match preview renderer
-
-[ ] Unit tests for veto flow logic
 
 [ ] UI/UX polish for series setup
 
