@@ -1,7 +1,12 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { assignRoles } from "../lib/api";
 
 export default function TeamAssignmentForm({ series, onSuccess }) {
+  // debug: detect multiple mounts
+  useEffect?.(() => {}, []); // ensure hooks import if not already
+  console.log("[MOUNT] TeamAssignmentForm", { seriesId: series?.id, teamA: series?.team_a, teamB: series?.team_b });
+  console.log(new Error("TeamAssignmentForm mount stack").stack);
+
   const [teamA, setTeamA] = useState(series.team_a || "");
   const [teamB, setTeamB] = useState(series.team_b || "");
   const [loading, setLoading] = useState(false);

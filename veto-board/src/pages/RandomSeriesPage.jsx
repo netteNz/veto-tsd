@@ -1,4 +1,6 @@
 import { useState, useCallback, useEffect } from "react";
+import { Link } from "react-router-dom";
+import { ArrowLeft } from "lucide-react";
 import SeriesLayout from "../components/SeriesLayout";
 
 export default function RandomSeriesPage() {
@@ -47,7 +49,7 @@ export default function RandomSeriesPage() {
     const banConfig = {
       Bo3: { totalBans: 3, objectiveBans: 2 },
       Bo5: { totalBans: 5, objectiveBans: 3 },
-      Bo7: { totalBans: 5, objectiveBans: 3 },
+      Bo7: { totalBans: 7, objectiveBans: 5 },
     };
     const { totalBans, objectiveBans } = banConfig[seriesType];
     const slayerBans = totalBans - objectiveBans;
@@ -191,7 +193,12 @@ export default function RandomSeriesPage() {
   return (
     <div className="p-6">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold text-white">Random Series Generator</h1>
+        <div className="flex items-center">
+          <Link to="/" className="mr-4 text-gray-400 hover:text-white transition-colors">
+            <ArrowLeft size={24} />
+          </Link>
+          <h1 className="text-3xl font-bold text-white">Random Series Generator</h1>
+        </div>
         <div className="flex space-x-4">
           <button
             onClick={handleRegenerate}

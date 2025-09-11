@@ -1,38 +1,23 @@
 import { useState } from "react";
-import { API_BASE } from "../lib/api";
 
-export default function CreateSeriesForm({ onCreated }) {
+export default function CreateSeriesForm({ onSubmit, loading = false }) {
   const [teamA, setTeamA] = useState("");
   const [teamB, setTeamB] = useState("");
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
     setError("");
 
     try {
-      const res = await fetch(`${API_BASE}/series/`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ team_a: teamA, team_b: teamB }),
-      });
-      
-      if (!res.ok) {
-        const errorData = await res.json().catch(() => ({}));
-        throw new Error(errorData.detail || `HTTP ${res.status}: ${res.statusText}`);
+      if (typeof onSubmit !== "function") {
+        throw new Error("onSubmit is not a function");
       }
-      
-      const data = await res.json();
-      // Handle both possible response structures
-      const seriesId = data.id || data.series_id || data;
-      onCreated(seriesId);
+      // pass raw form values — parent is responsible for API call
+      await onSubmit({ team_a: teamA, team_b: teamB });
     } catch (err) {
       console.error("Create series error:", err);
-      setError(err.message || "Failed to create series.");
-    } finally {
-      setLoading(false);
+      setError(err?.message || "Failed to create series.");
     }
   };
 
@@ -60,7 +45,7 @@ export default function CreateSeriesForm({ onCreated }) {
       <button
         type="submit"
         disabled={loading}
-        className="bg-green-500 px-4 py-2 rounded text-white hover:bg-green-600"
+        className="bg-green-500 px-4 py-2 rounded text-white hover:bg-green-600 disabled:opacity-60"
       >
         {loading ? "Creating..." : "Create Series"}
       </button>

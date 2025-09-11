@@ -15,6 +15,11 @@ import {
 } from "lucide-react";
 
 export default function SeriesLayout({ series, onSuccess }) {
+  // quick runtime diagnostics
+  useEffect(() => {
+    console.log("[SeriesLayout] props:", { seriesId: series?.id, state: series?.state, actionsLen: series?.actions?.length ?? 0 });
+  }, [series?.id, series?.state, series?.actions?.length]);
+
   // Keep existing state variables
   const [mapsById, setMapsById] = useState({});
   const [modeById, setModeById] = useState({});

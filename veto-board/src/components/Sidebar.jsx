@@ -1,13 +1,13 @@
 import { useState } from "react";
-import { Outlet, NavLink } from "react-router-dom";
+import { Outlet, NavLink, Link } from "react-router-dom"; // Add Link import
 import { 
-  FlaskConical, // Changed from Shield to FlaskConical
+  FlaskConical,
   Swords, 
   ChevronLeft, 
   ChevronRight, 
   Dices, 
   HelpCircle,
-  Zap // New import for a visual accent
+  Zap
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -55,28 +55,30 @@ export function Sidebar() {
         "transition-all duration-300 ease-in-out shadow-xl"
       )}
     >
-      {/* Top: App mark + store name */}
-      <div className="flex items-center gap-3 px-4 py-5">
-        <div className="grid place-items-center rounded-xl border border-blue-500 p-2.5 shadow-sm shadow-blue-500/10">
-          <FlaskConical className="size-5 text-blue-400" />
+      {/* Top: App mark + store name - Now wrapped in Link */}
+      <Link to="/" className="block hover:opacity-80 transition-opacity">
+        <div className="flex items-center gap-3 px-4 py-5">
+          <div className="grid place-items-center rounded-xl border border-blue-500 p-2.5 shadow-sm shadow-blue-500/10">
+            <FlaskConical className="size-5 text-blue-400" />
+          </div>
+          <AnimatePresence initial={false}>
+            {open && (
+              <motion.div
+                key="brand"
+                initial={{ opacity: 0, x: -4 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -4 }}
+                className="truncate"
+              >
+                <div className="text-sm font-bold text-white leading-tight tracking-wide flex items-center">
+                  TSD Veto <Zap className="h-3 w-3 ml-1 text-blue-400" />
+                </div>
+                <div className="text-xs text-blue-400 leading-tight font-medium">Created by netteNz</div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
-        <AnimatePresence initial={false}>
-          {open && (
-            <motion.div
-              key="brand"
-              initial={{ opacity: 0, x: -4 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -4 }}
-              className="truncate"
-            >
-              <div className="text-sm font-bold text-white leading-tight tracking-wide flex items-center">
-                TSD Veto <Zap className="h-3 w-3 ml-1 text-blue-400" />
-              </div>
-              <div className="text-xs text-blue-400 leading-tight font-medium">Created by netteNz</div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
+      </Link>
 
       {/* Divider */}
       <div className="mx-4 border-t border-neutral-800/70" />
