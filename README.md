@@ -1,30 +1,81 @@
 # TSD Veto Tool (Frontend)
 
-This is the React + Tailwind frontend for the **TSD Veto Tool**, a web app used to manage Halo Infinite competitive map/mode veto sequences.
+HCS-style veto system for competitive Halo Infinite.
+
+
+---
+
+## Description
+
+TSD Veto Tool streamlines the process of setting up competitive Halo Infinite matches by providing an interactive veto system. Teams can pick and ban map-mode combinations, lock in Slayer selections, and track the final series layout in real time. The tool ensures transparency, consistency, and speed for both tournament organizers and players.
+
+
+---
 
 ## Features
-- Create and manage best-of series (Bo3/Bo5/Bo7).
-- Ban and pick objective/map combos.
-- Slayer map selection.
-- Live series layout view.
+
+- Set up best-of series formats (Bo3 / Bo5 / Bo7)
+
+- Pick / Ban map-mode combinations
+
+- Slayer mode map selection
+
+- Live series view to track picks, bans, and outcomes
+
+- Integrated with Django REST backend
+
+
+
+---
 
 ## Tech Stack
-- [React](https://react.dev/)
-- [Vite](https://vitejs.dev/)
-- [Tailwind CSS](https://tailwindcss.com/)
 
-## Development
+React
+
+Vite
+
+Tailwind CSS
+
+
+
+---
+
+Setup & Usage
 
 ```bash
-# install dependencies
+# Install dependencies
 npm install
 
-# run locally (http://localhost:5173)
+# Run in development mode (localhost:5173)
 npm run dev
 
-# build for production
+# Create production build
 npm run build
 
-# preview the production build
+# Preview production build
 npm run preview
 ```
+
+---
+
+## TODO
+
+[ ] Export veto layout (image/PDF for sharing)
+
+[ ] Improve mobile UX (responsive veto board)
+
+[ ] Add live match preview renderer
+
+[ ] Unit tests for veto flow logic
+
+[ ] UI/UX polish for series setup
+
+
+
+---
+
+## Project Info
+
+Repository: github.com/netteNz/veto-tsd
+
+Live demo: GitHub Pages deployment
