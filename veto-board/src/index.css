@@ -16,9 +16,9 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* nicer scrollbars for the messages pane */
+/* Mobile-friendly scrollbars */
 .custom-scroll::-webkit-scrollbar {
-  width: 10px;
+  width: 8px;
 }
 
 .custom-scroll::-webkit-scrollbar-track {
@@ -28,11 +28,60 @@ body {
 .custom-scroll::-webkit-scrollbar-thumb {
   background: rgba(255, 255, 255, 0.06);
   border-radius: 9999px;
-  border: 3px solid transparent;
+  border: 2px solid transparent;
   background-clip: padding-box;
 }
 
-/* small card shadow in dark */
+/* Mobile touch targets */
+@media (max-width: 768px) {
+  .custom-scroll::-webkit-scrollbar {
+    width: 6px;
+  }
+  
+  /* Ensure minimum touch target size */
+  button {
+    min-height: 44px;
+  }
+  
+  /* Improve tap highlights */
+  button, a, [role="button"] {
+    -webkit-tap-highlight-color: rgba(59, 130, 246, 0.1);
+  }
+}
+
+/* Card shadows */
 .shadow-lg {
   box-shadow: 0 6px 18px rgba(2, 6, 23, 0.6);
+}
+
+/* Mobile-specific utilities */
+@media (max-width: 640px) {
+  /* Reduce padding on small screens */
+  .mobile-reduced-padding {
+    padding: 0.75rem !important;
+  }
+  
+  /* Stack flex items on mobile */
+  .mobile-stack {
+    flex-direction: column !important;
+  }
+  
+  /* Full width on mobile */
+  .mobile-full-width {
+    width: 100% !important;
+  }
+}
+
+/* Prevent horizontal scrolling */
+html, body {
+  overflow-x: hidden;
+}
+
+/* Ensure text doesn't overflow */
+.truncate-mobile {
+  @media (max-width: 640px) {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
 }

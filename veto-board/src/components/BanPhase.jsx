@@ -101,35 +101,35 @@ export default function BanPhase({ series, onSuccess }) {
   // After you've loaded the combos, filter them before displaying in UI
   const filteredAvailable = useMemo(() => {
     if (!available || !available.length) return [];
-    
+
     return available.map(group => {
       // Clone the group
       const newGroup = {...group};
-      
-      // Filter the combos based on ban/pick status
+
+      // Filter the combos based on exact combo ban/pick status
       newGroup.combos = (group.combos || []).filter(combo => {
         const mapId = Number(combo.map_id);
         const modeId = Number(group.mode_id);
-        
-        // Skip if map is picked for any mode
-        if (pickedMapIds.has(mapId)) {
+
+        if (!mapId || !modeId) return false;
+
+        // Build exact combo key and check explicit combo bans/picks
+        const comboKey = `${mapId}:${modeId}`;
+        if (bannedCombinations.has(comboKey) || pickedCombinations.has(comboKey)) {
           return false;
         }
-        
-        // For objective, check combination bans
-        if (isObjectiveCombo) {
-          const comboKey = `${mapId}:${modeId}`;
-          return !bannedCombinations.has(comboKey);
+
+        // For slayer flow, also respect map-level slayer bans (map-only bans)
+        if (!isObjectiveCombo && slayerBannedMapIds.has(mapId)) {
+          return false;
         }
-        // For slayer, check slayer-specific bans
-        else {
-          return !slayerBannedMapIds.has(mapId);
-        }
+
+        return true;
       });
-      
+
       return newGroup;
     }).filter(group => group.combos && group.combos.length > 0);
-  }, [available, isObjectiveCombo, bannedCombinations, slayerBannedMapIds, pickedMapIds]);
+  }, [available, isObjectiveCombo, bannedCombinations, slayerBannedMapIds, pickedCombinations]);
 
   return (
     <div className="bg-gray-800 text-white p-4 mt-4 rounded space-y-4">

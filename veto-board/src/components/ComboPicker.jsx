@@ -47,12 +47,18 @@ export default function ComboPicker({
               <div className="flex flex-wrap gap-2">
                 {group.combos.map((combo, idx) => {
                   const mapId = normMapId(combo);
-                  const modeId = normModeId(combo);
+                  // prefer combo.mode, fall back to group.mode / group.modeId
+                  const modeId =
+                    normModeId(combo) ??
+                    normModeId(group) ??
+                    (typeof group.modeId === "number" ? group.modeId : null) ??
+                    (typeof group.mode === "number" ? group.mode : null);
                   return (
                     <button
-                      key={`${mapId}-${modeId}-${idx}`}
+                      key={`${mapId}-${modeId ?? "no-mode"}-${idx}`}
                       onClick={() => onPick && onPick(mapId, modeId)}
-                      disabled={loading || !mapId || !modeId}
+                      // disable when no map or no explicit mode id (null/undefined)
+                      disabled={loading || !mapId || modeId == null}
                       className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 px-3 py-2 rounded text-sm"
                     >
                       {mapLabel(combo)}
