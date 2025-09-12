@@ -1,7 +1,6 @@
 # TSD Veto Tool (Frontend)
 
-HCS-style veto system for competitive Halo Infinite.
-
+If the site is hanging visit this url: https://veto-webapp.onrender.com so the service spins up.
 
 ---
 
