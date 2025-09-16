@@ -69,6 +69,17 @@ export default function LandingPage() {
         <div className="bg-gray-800 rounded-lg p-6">
           <h3 className="text-lg font-semibold text-white mb-3">Features</h3>
           <ul className="space-y-2 text-gray-300">
+            <li>
+              • Click this link if the Start New Series button is hanging:&nbsp;
+              <a
+                href="https://veto-webapp.onrender.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-blue-400 hover:underline"
+              >
+                https://veto-webapp.onrender.com
+              </a>
+            </li>
             <li>• Team-based veto and pick system</li>
             <li>• Support for Bo3, Bo5, and Bo7 series formats</li>
             <li>• Real-time series progression tracking</li>
