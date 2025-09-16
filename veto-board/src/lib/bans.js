@@ -82,7 +82,7 @@ export function processBansAndPicks(actions) {
     }
   }
   
-  // Process picks
+  // Process picks - FIXED: Trust explicit kind field over mode inference
   for (const pick of picks) {
     const mapId = Number(getMapId(pick));
     if (!mapId) continue;
@@ -97,17 +97,29 @@ export function processBansAndPicks(actions) {
     const pickModeId = Number(getModeId(pick));
     const pickKindStr = typeof pick.kind === "string" ? pick.kind.toUpperCase() : "";
     const pickIsObjectiveKind = pickKindStr.includes("OBJECTIVE");
-    const isSlayerPick = pick.kind === "SLAYER_MAP" || (!pickIsObjectiveKind && pickModeId === 6);
+    
+    // FIXED: Trust explicit kind field first, then fall back to mode inference
+    let isSlayerPick;
+    if (pick.kind === "SLAYER_MAP") {
+      isSlayerPick = true;
+    } else if (pickIsObjectiveKind) {
+      isSlayerPick = false;
+    } else {
+      // No explicit kind or ambiguous - infer from mode
+      isSlayerPick = pickModeId === 6;
+    }
+    
+    // Log when there's a conflict but we're trusting the kind field
     if (pickModeId === 6 && pickIsObjectiveKind) {
-      console.warn(`[WARN] Pick has mode=6 but kind=${pick.kind}; treating as OBJECTIVE (defensive)`, pick);
+      console.log(`[DEBUG] Pick has mode=6 but kind=${pick.kind}; trusting kind field and treating as OBJECTIVE`, pick);
     }
  
     if (isSlayerPick) {
       slayerPickedMapIds.add(mapId);
-      console.log(`[DEBUG] Classified as SLAYER pick: ${pick.map}`);
+      console.log(`[DEBUG] Classified as SLAYER pick: ${pick.map_name || pick.map}`);
     } else {
       objectivePickedMapIds.add(mapId);
-      console.log(`[DEBUG] Classified as OBJECTIVE pick: ${pick.map}`);
+      console.log(`[DEBUG] Classified as OBJECTIVE pick: ${pick.map_name || pick.map}`);
     }
   }
   
@@ -125,32 +137,44 @@ export function processBansAndPicks(actions) {
 }
 
 // FIXED: Correct helper functions
-export function isComboBanned(mapId, modeId, banData) {
-  const { bannedCombinations, slayerBannedMapIds } = banData;
+export function isComboBanned(mapId, modeId, banData = {}) {
+  const { bannedCombinations = new Set(), slayerBannedMapIds = new Set() } = banData;
   const numMapId = Number(mapId);
   const numModeId = Number(modeId);
-  
-  // For Slayer (mode ID 6), check slayer banned maps
+
+  // Prefer explicit objective combination bans first
+  if (bannedCombinations.has(`${numMapId}:${numModeId}`)) return true;
+
+  // Fallback: if this is a Slayer check, consult slayer banned maps
   if (numModeId === 6 || isSlayerMode(modeId)) {
     return slayerBannedMapIds.has(numMapId);
   }
-  
-  // For other modes, check specific combination
-  return bannedCombinations.has(`${numMapId}:${numModeId}`);
+
+  return false;
 }
 
-export function isComboPicked(mapId, modeId, pickData) {
-  const { pickedCombinations, slayerPickedMapIds } = pickData;
+export function isComboPicked(mapId, modeId, pickData = {}) {
+  const {
+    pickedCombinations = new Set(),
+    slayerPickedMapIds = new Set(),
+    objectivePickedMapIds = new Set(),
+  } = pickData;
+
   const numMapId = Number(mapId);
   const numModeId = Number(modeId);
-  
-  // For Slayer, check if map was used in any Slayer round
+
+  // Exact objective combination picks win first
+  if (pickedCombinations.has(`${numMapId}:${numModeId}`)) return true;
+
+  // If the map was recorded as an objective pick (covers mode=6 objective cases)
+  if (objectivePickedMapIds.has(numMapId)) return true;
+
+  // Otherwise, for Slayer checks, consult slayerPickedMapIds
   if (numModeId === 6 || isSlayerMode(modeId)) {
     return slayerPickedMapIds.has(numMapId);
   }
-  
-  // For objectives, check exact combination
-  return pickedCombinations.has(`${numMapId}:${numModeId}`);
+
+  return false;
 }
 
 export function isMapModeAvailable(mapId, modeId, banData, pickData) {

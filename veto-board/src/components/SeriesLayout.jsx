@@ -13,6 +13,8 @@ import {
   XCircle, 
   CheckCircle 
 } from "lucide-react";
+import { Download } from "lucide-react"; // added
+import exportElementToPdf from "../lib/exportPdf"; // added
 
 export default function SeriesLayout({ series, onSuccess }) {
   // quick runtime diagnostics
@@ -206,14 +208,23 @@ export default function SeriesLayout({ series, onSuccess }) {
     });
   }, [mapsList, banPickData]);
 
-  // In SeriesLayout.jsx where you render the Game Layout
+  // FIXED: Better game mode detection that respects the pick classification
   const getGameMode = (action) => {
+    // If it was classified as OBJECTIVE, trust that and use the actual mode
+    if (action.kind === "OBJECTIVE_COMBO" || action.kind?.includes("OBJECTIVE")) {
+      return action.mode_name || action.mode || "Objective";
+    }
+    
+    // Only treat as Slayer if explicitly marked or no other mode info
     if (action.kind === "SLAYER_MAP" || 
         action.mode_name === "Slayer" || 
-        action.mode === "Slayer") {
+        action.mode === "Slayer" ||
+        (!action.mode_name && !action.mode && action.mode_id === 6)) {
       return "Slayer";
     }
-    return action.mode || action.mode_name;
+    
+    // Default to the actual mode name
+    return action.mode_name || action.mode || "Unknown";
   };
 
   // Update the renderModeIcon function to swap icons for Slayer and Oddball
@@ -250,12 +261,39 @@ export default function SeriesLayout({ series, onSuccess }) {
     return <div className="w-[18px] h-[18px]" />;
   };
 
+  // add export handler
+  const handleExport = async () => {
+    try {
+      // allow UI to settle
+      await new Promise((r) => setTimeout(r, 200));
+      const filename = `series-${series?.id ?? "final"}.pdf`;
+      await exportElementToPdf("#series-layout", filename, { scale: 2 });
+    } catch (err) {
+      console.error("Export failed", err);
+      alert("Export failed");
+    }
+  };
+
   return (
-    <div className="bg-gray-800 text-white p-6 mt-4 rounded space-y-6">
+    <div id="series-layout" className="bg-gray-800 text-white p-6 mt-4 rounded space-y-6"> {/* id added */}
       <div className="flex justify-between items-center">
         <h2 className="text-2xl font-bold">Series Layout — Bo7</h2>
-        <div className="text-sm text-gray-300">
-          {series.team_a} vs {series.team_b}
+        <div className="flex items-center gap-4">
+          <div className="text-sm text-gray-300">
+            {series.team_a} vs {series.team_b}
+          </div>
+
+          {/* show export button only when finalized */}
+          {series?.state === "SERIES_COMPLETE" && (
+            <button
+              onClick={handleExport}
+              title="Export final bans & picks to PDF"
+              className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 px-3 py-1 rounded text-white"
+            >
+              <Download size={16} />
+              <span className="text-sm">Export</span>
+            </button>
+          )}
         </div>
       </div>
 
@@ -337,24 +375,10 @@ export default function SeriesLayout({ series, onSuccess }) {
             // Get proper map name from ID
             const mapName = mapsById[p.map || p.map_id] || p.map || `Map ${p.map || p.map_id}`;;
             
-            // Get proper mode name using lookup
-            const modeId = p.mode_id || p.mode;
-            let modeName;
+            // FIXED: Use the corrected getGameMode function
+            const modeName = getGameMode(p);
             
-            // Handle Slayer special case
-            if (p.kind === "SLAYER_MAP" || 
-                p.mode_name === "Slayer" || 
-                p.mode === "Slayer" ||
-                modeId === 6) {
-              modeName = "Slayer";
-            } else {
-              // Try to get name from lookup table first, then fallbacks
-              modeName = (typeof modeId === 'number' && modeById[modeId]) || 
-                        p.mode_name || 
-                        (typeof p.mode === 'string' ? p.mode : `Mode ${modeId}`);
-            }
-            
-            // Determine if this is a Slayer mode for icon rendering
+            // FIXED: Determine if this is Slayer based on the corrected mode name
             const isSlayerMode = modeName === "Slayer" || p.kind === "SLAYER_MAP";
             
             return (
