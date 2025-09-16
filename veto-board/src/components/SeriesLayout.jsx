@@ -275,7 +275,11 @@ export default function SeriesLayout({ series, onSuccess }) {
   };
 
   return (
-    <div id="series-layout" className="bg-gray-800 text-white p-6 mt-4 rounded space-y-6"> {/* id added */}
+    <div 
+      id="series-layout" 
+      data-export-target="true"
+      className="bg-gray-800 text-white p-6 mt-4 rounded space-y-6"
+    >
       <div className="flex justify-between items-center">
         <h2 className="text-2xl font-bold">Series Layout — Bo7</h2>
         <div className="flex items-center gap-4">
@@ -284,7 +288,7 @@ export default function SeriesLayout({ series, onSuccess }) {
           </div>
 
           {/* show export button only when finalized */}
-          {series?.state === "SERIES_COMPLETE" && (
+          {/* {series?.state === "SERIES_COMPLETE" && (
             <button
               onClick={handleExport}
               title="Export final bans & picks to PDF"
@@ -293,7 +297,7 @@ export default function SeriesLayout({ series, onSuccess }) {
               <Download size={16} />
               <span className="text-sm">Export</span>
             </button>
-          )}
+          )} */}
         </div>
       </div>
 
