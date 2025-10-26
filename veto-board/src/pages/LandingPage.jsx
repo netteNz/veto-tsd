@@ -66,6 +66,13 @@ export default function LandingPage() {
           </Link>
         </div>
 
+        <div className="bg-yellow-900 border-2 border-yellow-600 rounded-lg p-6 mb-6">
+          <h3 className="text-lg font-semibold text-yellow-200 mb-2">⚠️ Service Migration in Progress</h3>
+          <p className="text-yellow-100">
+            This tool is currently being migrated to a new service. The current backend has reached its free tier limits and is no longer operational. Please check back soon for updates.
+          </p>
+        </div>
+
         <div className="bg-gray-800 rounded-lg p-6">
           <h3 className="text-lg font-semibold text-white mb-3">Features</h3>
           <ul className="space-y-2 text-gray-300">
