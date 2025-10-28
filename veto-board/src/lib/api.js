@@ -4,7 +4,7 @@ console.log("[DEBUG] All environment variables:", import.meta.env);
 console.log("[DEBUG] VITE_API_BASE specifically:", import.meta.env.VITE_API_BASE);
 
 // FIXED: Removed the incorrect prefix from fallback URL
-const API_BASE = import.meta.env.VITE_API_BASE || "https://veto-webapp-production.up.railway.app";
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "https://veto-webapp-production.up.railway.app/api";
 
 console.log("[DEBUG] Final API_BASE value:", API_BASE);
 
