@@ -1,10 +1,10 @@
 // Add debugging at the top to see all environment variables
 console.log("[DEBUG] Environment mode:", import.meta.env.MODE);
 console.log("[DEBUG] All environment variables:", import.meta.env);
-console.log("[DEBUG] VITE_API_BASE specifically:", import.meta.env.VITE_API_BASE);
+console.log("[DEBUG] VITE_API_BASE_URL specifically:", import.meta.env.VITE_API_BASE_URL);
 
-// FIXED: Removed the incorrect prefix from fallback URL
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "https://veto-webapp-production.up.railway.app/api";
+// FIXED: Use VITE_API_BASE_URL (matching .env.production) with correct fallback
+const API_BASE = import.meta.env.VITE_API_BASE_URL || "https://veto-webapp-production.up.railway.app/api";
 
 console.log("[DEBUG] Final API_BASE value:", API_BASE);
 
