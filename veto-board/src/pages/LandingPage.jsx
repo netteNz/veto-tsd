@@ -11,7 +11,6 @@ export default function LandingPage() {
     try {
       setCreating(true);
       const s = await createSeries("", "");
-      // navigate to /veto and pass the new series id as query param
       navigate(`/veto?seriesId=${s.id}`);
     } catch (err) {
       console.error("Failed to create series:", err);
@@ -66,30 +65,13 @@ export default function LandingPage() {
           </Link>
         </div>
 
-        <div className="bg-yellow-900 border-2 border-yellow-600 rounded-lg p-6 mb-6">
-          <h3 className="text-lg font-semibold text-yellow-200 mb-2">⚠️ Service Migration in Progress</h3>
-          <p className="text-yellow-100">
-            This tool is currently being migrated to a new service. The current backend has reached its free tier limits and is no longer operational. Please check back soon for updates.
-          </p>
-        </div>
-
         <div className="bg-gray-800 rounded-lg p-6">
           <h3 className="text-lg font-semibold text-white mb-3">Features</h3>
           <ul className="space-y-2 text-gray-300">
-            <li>
-              • Click this link if the Start New Series button is hanging:&nbsp;
-              <a
-                href="https://veto-webapp.onrender.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-blue-400 hover:underline"
-              >
-                https://veto-webapp.onrender.com
-              </a>
-            </li>
             <li>• Team-based veto and pick system</li>
             <li>• Support for Bo3, Bo5, and Bo7 series formats</li>
             <li>• Real-time series progression tracking</li>
+            <li>• Live drafting and ban phase management</li>
           </ul>
         </div>
       </div>
