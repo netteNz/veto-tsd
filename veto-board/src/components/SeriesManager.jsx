@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { getSeries, postUndo, postReset } from "../lib/api";
 import { processBansAndPicks } from "../lib/bans";
 import BanPhase from "./BanPhase";
@@ -12,22 +12,12 @@ import { Download } from "lucide-react";
 export default function SeriesManager({ seriesId, onSuccess }) {
   const [series, setSeries] = useState(null);
   const [error, setError] = useState("");
-  const [processedBanData, setProcessedBanData] = useState(null);
 
   useEffect(() => {
     if (seriesId) {
       loadSeries();
     }
   }, [seriesId]);
-
-  useEffect(() => {
-    if (series?.actions) {
-      const banData = processBansAndPicks(series.actions);
-      setProcessedBanData(banData);
-
-      console.log("[DEBUG] Processed ban data:", banData);
-    }
-  }, [series?.actions]);
 
   const loadSeries = async () => {
     try {
@@ -38,13 +28,6 @@ export default function SeriesManager({ seriesId, onSuccess }) {
       console.log("[DEBUG] First 3 actions:", data.actions?.slice(0, 3));
 
       setSeries(data);
-
-      // Process bans right after loading
-      if (data?.actions) {
-        const banData = processBansAndPicks(data.actions);
-        setProcessedBanData(banData);
-        console.log("[DEBUG] Processed ban data:", banData);
-      }
     } catch (err) {
       console.error("[DEBUG] Error loading series:", err);
       setError("Could not load series.");
@@ -109,6 +92,10 @@ export default function SeriesManager({ seriesId, onSuccess }) {
       alert(`Export failed: ${errorMsg}`);
     }
   };
+
+  const processedBanData = useMemo(() => {
+    return processBansAndPicks(series?.actions || []);
+  }, [series?.actions]);
 
   const renderCurrentPhase = () => {
     if (!series) return null;

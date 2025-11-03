@@ -74,9 +74,25 @@ export default function BanPhase({ series, onSuccess }) {
     console.log("[DEBUG] Selection changed:", value);
 
     if (value) {
-      const [mapId, modeId] = value.split(",");
+      // FIXED: Add validation for split
+      const parts = value.split(",");
+      if (parts.length !== 2) {
+        console.warn("[DEBUG] Invalid selection format:", value);
+        setSelectedMap(null);
+        setSelectedMode(null);
+        return;
+      }
+      
+      const [mapId, modeId] = parts;
       const mapNum = Number(mapId);
       const modeNum = Number(modeId);
+
+      if (isNaN(mapNum) || isNaN(modeNum)) {
+        console.warn("[DEBUG] Invalid map or mode ID:", { mapNum, modeNum });
+        setSelectedMap(null);
+        setSelectedMode(null);
+        return;
+      }
 
       console.log("[DEBUG] Parsed selection:", { mapNum, modeNum });
       setSelectedMap(mapNum);

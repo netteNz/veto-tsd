@@ -64,7 +64,13 @@ export function init({ measurementId, created, autoTrack = true } = {}) {
   window.gtag('js', new Date());
   window.gtag('config', _measurementId, { created: _created });
 
-  if (_autoTrack) hookHistory();
+  if (_autoTrack) {
+    // FIXED: Track which listeners we've added so we can avoid duplicates
+    if (!window._gaHistoryHooked) {
+      hookHistory();
+      window._gaHistoryHooked = true;
+    }
+  }
   _initialized = true;
 }
 

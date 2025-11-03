@@ -281,7 +281,7 @@ export default function SeriesLayout({ series, onSuccess }) {
       className="bg-gray-800 text-white p-6 mt-4 rounded space-y-6"
     >
       <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold">Series Layout — Bo7</h2>
+        <h2 className="text-2xl font-bold">Series Layout — {series?.type || 'Bo7'}</h2>
         <div className="flex items-center gap-4">
           <div className="text-sm text-gray-300">
             {series.team_a} vs {series.team_b}
