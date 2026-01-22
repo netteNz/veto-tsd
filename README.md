@@ -1,13 +1,19 @@
 # TSD Veto Tool (Frontend)
 
-If the site is hanging visit this url: https://veto-webapp.onrender.com so the service spins up.
-
 ---
 
 ## Description
 
 TSD Veto Tool streamlines the process of setting up competitive Halo Infinite matches by providing an interactive veto system. Teams can pick and ban map-mode combinations, lock in Slayer selections, and track the final series layout in real time. The tool ensures transparency, consistency, and speed for both tournament organizers and players.
 
+
+---
+
+## 📝 Current Status
+
+**Frontend-Only Demo (Refactoring in Progress)**
+
+This project is currently being refactored to run as a **frontend-only application** for demonstration purposes. The Django REST backend has been decoupled, and the tool now operates independently using client-side state management. This allows for rapid prototyping and easier deployment while we prepare the full-stack integration for production.
 
 ---
 
@@ -21,10 +27,6 @@ TSD Veto Tool streamlines the process of setting up competitive Halo Infinite ma
 
 - Live series view to track picks, bans, and outcomes
 
-- Integrated with Django REST backend
-
-
-
 ---
 
 ## Tech Stack
@@ -34,8 +36,6 @@ TSD Veto Tool streamlines the process of setting up competitive Halo Infinite ma
 - Vite
 
 - Tailwind CSS
-
-
 
 ---
 
@@ -64,8 +64,6 @@ npm run preview
 [ ] Improve mobile UX (responsive veto board)
 
 [ ] UI/UX polish for series setup
-
-
 
 ---
 

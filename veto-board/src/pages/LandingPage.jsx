@@ -65,6 +65,13 @@ export default function LandingPage() {
           </Link>
         </div>
 
+        <div className="bg-amber-900/20 border border-amber-700/50 rounded-lg p-6 mb-8">
+          <h3 className="text-lg font-semibold text-amber-100 mb-2">📝 Project Status</h3>
+          <p className="text-amber-50">
+            This project is currently being refactored to run as a <span className="font-semibold">frontend-only application</span> for demonstration purposes. The Django REST backend has been decoupled, and the tool now operates independently using client-side state management. Backend integration will be reintroduced in future versions.
+          </p>
+        </div>
+
         <div className="bg-gray-800 rounded-lg p-6">
           <h3 className="text-lg font-semibold text-white mb-3">Features</h3>
           <ul className="space-y-2 text-gray-300">
