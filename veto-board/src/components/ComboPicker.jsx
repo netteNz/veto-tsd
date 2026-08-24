@@ -42,8 +42,8 @@ export default function ComboPicker({
       {objectiveCombos && objectiveCombos.length > 0 && (
         <div className="space-y-4">
           {objectiveCombos.map((group, gi) => (
-            <div key={gi} className="p-4 bg-slate-700 rounded">
-              <h4 className="text-yellow-400 font-semibold mb-2">{group.mode}</h4>
+            <div key={gi} className="bg-panel-raised p-4">
+              <h4 className="mb-2 text-sm font-medium text-hud">{group.mode}</h4>
               <div className="flex flex-wrap gap-2">
                 {group.combos.map((combo, idx) => {
                   const mapId = normMapId(combo);
@@ -59,7 +59,7 @@ export default function ComboPicker({
                       onClick={() => onPick && onPick(mapId, modeId)}
                       // disable when no map or no explicit mode id (null/undefined)
                       disabled={loading || !mapId || modeId == null}
-                      className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 px-3 py-2 rounded text-sm"
+                      className="rounded-lg bg-hud/10 px-3 py-2 text-sm text-ink transition-colors hover:bg-hud/20 disabled:opacity-40"
                     >
                       {mapLabel(combo)}
                     </button>
@@ -72,8 +72,8 @@ export default function ComboPicker({
       )}
 
       {slayerMaps && slayerMaps.length > 0 && (
-        <div className="p-4 bg-slate-700 rounded">
-          <h4 className="text-yellow-400 font-semibold mb-2">Slayer</h4>
+        <div className="bg-panel-raised p-4">
+          <h4 className="mb-2 text-sm font-medium text-hud">Slayer</h4>
           <div className="flex flex-wrap gap-2">
             {slayerMaps.map((m, idx) => {
               const mapId = normMapId(m);
@@ -83,7 +83,7 @@ export default function ComboPicker({
                   key={`${mapId}-${idx}`}
                   onClick={() => onPick && onPick(mapId, null)}
                   disabled={loading || !mapId}
-                  className="bg-green-600 hover:bg-green-700 disabled:opacity-50 px-4 py-2 rounded text-sm"
+                  className="rounded-lg bg-hud/10 px-4 py-2 text-sm text-ink transition-colors hover:bg-hud/20 disabled:opacity-40"
                 >
                   {label}
                 </button>

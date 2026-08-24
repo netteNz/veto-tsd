@@ -1,5 +1,5 @@
 import { Link, useNavigate } from "react-router-dom";
-import { Play, HelpCircle, Shuffle } from "lucide-react";
+import { Crosshair, HelpCircle, Shuffle, TriangleAlert } from "lucide-react";
 import { useState } from "react";
 import { createSeries } from "../lib/api";
 
@@ -22,63 +22,71 @@ export default function LandingPage() {
 
   return (
     <div className="p-6">
-      <div className="max-w-4xl mx-auto">
-        <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold text-white mb-4">TSD Veto Tool</h1>
-          <p className="text-xl text-gray-300 mb-8">
-            Drafting and veto system for competitive Halo matches
+      <div className="mx-auto max-w-4xl">
+        <div className="mb-12 pb-10 text-center">
+          <div className="mb-3 text-xs font-medium uppercase tracking-[0.2em] text-hud">
+            Map &amp; Mode Draft Tool
+          </div>
+          <h1 className="font-display text-5xl font-bold text-ink sm:text-6xl">
+            TSD Veto
+          </h1>
+          <p className="mx-auto mt-4 max-w-xl text-lg text-ink-muted">
+            Run the ban and pick draft for a competitive Halo Infinite series &mdash; live, in front of both teams.
           </p>
         </div>
 
-        <div className="grid md:grid-cols-2 gap-6 mb-8">
+        <div className="mb-8 grid gap-6 md:grid-cols-2">
           <button
             onClick={handleStartNewSeries}
-            className="w-full text-left border-2 border-blue-600 text-blue-500 hover:bg-blue-600 hover:text-white transition-colors p-8 rounded-lg group bg-transparent"
+            className="group rounded-2xl bg-panel p-8 text-left transition-colors hover:bg-panel-raised disabled:cursor-not-allowed disabled:opacity-60"
             disabled={creating}
           >
-            <Play size={48} className="mx-auto mb-4 text-blue-500 group-hover:text-white group-hover:scale-110 transition-transform" />
-            <h2 className="text-2xl font-bold text-blue-500 group-hover:text-white mb-2">Start New Series</h2>
-            <p className="text-blue-100 group-hover:text-blue-50">
-              {creating ? "Creating..." : "Begin a new competitive veto session with team assignments and live drafting"}
+            <Crosshair size={32} className="mb-4 text-team-red transition-transform group-hover:scale-110" />
+            <h2 className="mb-2 font-display text-2xl font-bold text-ink">Start New Series</h2>
+            <p className="text-sm text-ink-muted">
+              {creating ? "Creating…" : "Assign teams, choose a format, and run the live veto draft"}
             </p>
           </button>
 
           <Link
             to="/random"
-            className="border-2 border-green-600 text-green-500 hover:bg-green-600 hover:text-white transition-colors p-8 rounded-lg text-center group bg-transparent"
+            className="group rounded-2xl bg-panel p-8 text-left transition-colors hover:bg-panel-raised"
           >
-            <Shuffle size={48} className="mx-auto mb-4 text-green-500 group-hover:text-white group-hover:scale-110 transition-transform" />
-            <h2 className="text-2xl font-bold text-green-500 group-hover:text-white mb-2">Random Series</h2>
-            <p className="text-green-100 group-hover:text-green-50">
-              Generate a randomized series for practice or demonstration purposes
+            <Shuffle size={32} className="mb-4 text-team-blue transition-transform group-hover:scale-110" />
+            <h2 className="mb-2 font-display text-2xl font-bold text-ink">Random Series</h2>
+            <p className="text-sm text-ink-muted">
+              Generate a randomized series for practice or a demo run-through
             </p>
           </Link>
         </div>
 
-        <div className="text-center mb-8">
+        <div className="mb-8 text-center">
           <Link
             to="/help"
-            className="inline-flex items-center text-gray-300 hover:text-white transition-colors"
+            className="inline-flex items-center text-sm text-ink-muted transition-colors hover:text-hud"
           >
-            <HelpCircle size={20} className="mr-2" />
-            <span className="text-lg">How to Use This Tool</span>
+            <HelpCircle size={16} className="mr-2" />
+            <span>How to use this tool</span>
           </Link>
         </div>
 
-        <div className="bg-amber-900/20 border border-amber-700/50 rounded-lg p-6 mb-8">
-          <h3 className="text-lg font-semibold text-amber-100 mb-2">📝 Project Status</h3>
-          <p className="text-amber-50">
+        <div className="mb-8 rounded-xl bg-warn/10 p-6">
+          <h3 className="mb-2 flex items-center gap-2 font-medium text-warn">
+            <TriangleAlert size={18} />
+            Project Status
+          </h3>
+          <p className="text-sm text-ink">
             This project is currently being refactored to run as a <span className="font-semibold">frontend-only application</span> for demonstration purposes. The Django REST backend has been decoupled, and the tool now operates independently using client-side state management. Backend integration will be reintroduced in future versions.
           </p>
         </div>
 
-        <div className="bg-gray-800 rounded-lg p-6">
-          <h3 className="text-lg font-semibold text-white mb-3">Features</h3>
-          <ul className="space-y-2 text-gray-300">
-            <li>• Team-based veto and pick system</li>
-            <li>• Support for Bo3, Bo5, and Bo7 series formats</li>
-            <li>• Real-time series progression tracking</li>
-            <li>• Live drafting and ban phase management</li>
+        <div className="rounded-2xl bg-panel p-6">
+          <h3 className="mb-3 font-medium text-ink">Features</h3>
+          <ul className="space-y-2 text-sm text-ink-muted">
+            <li>Team-based veto and pick system</li>
+            <li>Support for Bo3, Bo5, and Bo7 series formats</li>
+            <li>Real-time series progression tracking</li>
+            <li>Live drafting and ban phase management</li>
           </ul>
         </div>
       </div>

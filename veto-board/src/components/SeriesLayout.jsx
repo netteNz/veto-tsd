@@ -230,33 +230,31 @@ export default function SeriesLayout({ series, onSuccess }) {
   // Update the renderModeIcon function to swap icons for Slayer and Oddball
 
   const renderModeIcon = (modeName, isSlayer = false) => {
-    const iconProps = { 
-      size: 18, 
-      className: "transition-transform hover:scale-110" 
+    const iconProps = {
+      size: 18,
+      className: "transition-transform hover:scale-110"
     };
-    
+
     // Add type safety - convert to string and handle null/undefined
     const modeNameStr = typeof modeName === 'string' ? modeName : String(modeName || '');
     const lowerModeName = modeNameStr.toLowerCase();
-    
-    // CHANGED: Slayer should use Target icon
+
     if (isSlayer || lowerModeName.includes('slayer')) {
-      return <Target {...iconProps} className={`${iconProps.className} text-red-400`} />;
+      return <Target {...iconProps} className={`${iconProps.className} text-team-red`} />;
     }
-    
+
     if (lowerModeName.includes('flag')) {
-      return <Flag {...iconProps} className={`${iconProps.className} text-blue-400`} />;
+      return <Flag {...iconProps} className={`${iconProps.className} text-team-blue`} />;
     } else if (lowerModeName.includes('stronghold')) {
-      return <Castle {...iconProps} className={`${iconProps.className} text-purple-400`} />;
+      return <Castle {...iconProps} className={`${iconProps.className} text-hud`} />;
     } else if (lowerModeName.includes('king')) {
-      return <Crown {...iconProps} className={`${iconProps.className} text-yellow-400`} />;
+      return <Crown {...iconProps} className={`${iconProps.className} text-warn`} />;
     } else if (lowerModeName.includes('bomb')) {
-      return <Bomb {...iconProps} className={`${iconProps.className} text-orange-400`} />;
-    // CHANGED: Oddball should use Skull icon
+      return <Bomb {...iconProps} className={`${iconProps.className} text-team-red`} />;
     } else if (lowerModeName.includes('oddball')) {
-      return <Skull {...iconProps} className={`${iconProps.className} text-green-400`} />;
+      return <Skull {...iconProps} className={`${iconProps.className} text-hud`} />;
     }
-    
+
     // Default icon if no match
     return <div className="w-[18px] h-[18px]" />;
   };
@@ -275,16 +273,21 @@ export default function SeriesLayout({ series, onSuccess }) {
   };
 
   return (
-    <div 
-      id="series-layout" 
+    <div
+      id="series-layout"
       data-export-target="true"
-      className="bg-gray-800 text-white p-6 mt-4 rounded space-y-6"
+      className="mt-4 space-y-6 rounded-2xl border border-ink-muted/10 bg-panel p-6"
     >
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold">Series Layout — {series?.type || 'Bo7'}</h2>
+      <div className="flex items-center justify-between">
+        <h2 className="font-display text-2xl font-bold text-ink">
+          Series Layout
+          {series?.type && <span className="text-ink-muted"> — {series.type}</span>}
+        </h2>
         <div className="flex items-center gap-4">
-          <div className="text-sm text-gray-300">
-            {series.team_a} vs {series.team_b}
+          <div className="text-sm text-ink-muted">
+            <span className="text-team-red">{series.team_a}</span>
+            {" "}vs{" "}
+            <span className="text-team-blue">{series.team_b}</span>
           </div>
 
           {/* show export button only when finalized */}
@@ -302,32 +305,32 @@ export default function SeriesLayout({ series, onSuccess }) {
       </div>
 
       {/* Bans Summary */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="bg-gray-700 p-4 rounded">
-          <h3 className="text-lg font-semibold mb-3 text-red-400 flex items-center">
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+        <div className="rounded-xl bg-panel-raised p-4">
+          <h3 className="mb-3 flex items-center font-medium text-warn">
             <XCircle size={18} className="mr-2" />
             Objective Bans ({objectiveBans.length})
           </h3>
           <div className="space-y-2">
-            {objectiveBans.length === 0 && <div className="text-gray-400 text-sm">No objective bans yet</div>}
+            {objectiveBans.length === 0 && <div className="text-sm text-ink-muted">No objective bans yet</div>}
             {objectiveBans.map(ban => {
               // Look up map name from the ID
               const mapId = ban.map_id || ban.map;
               const mapName = (typeof mapId === 'number' && mapsById[mapId]) || ban.map || `Map ${mapId}`;
-              
+
               // Look up mode name from the ID
               const modeId = ban.mode_id || ban.mode;
               const modeName = (typeof modeId === 'number' && modeById[modeId]) || ban.mode_name || ban.mode || `Mode ${modeId}`;
-              
+
               return (
-                <div key={ban.id} className="flex items-center justify-between mb-1 bg-gray-800/50 p-2 rounded">
+                <div key={ban.id} className="mb-1 flex items-center justify-between rounded-lg bg-panel/60 p-2">
                   <div className="flex items-center">
                     {renderModeIcon(modeName)}
-                    <span className="ml-2 font-medium">{mapName}</span>
+                    <span className="ml-2 font-medium text-ink">{mapName}</span>
                   </div>
-                  <div className="flex items-center text-gray-400">
-                    <span>{modeName} — Team {ban.team}</span>
-                    <XCircle size={16} className="ml-2 text-red-400" />
+                  <div className="flex items-center text-xs text-ink-muted">
+                    <span>{modeName} &middot; Team {ban.team}</span>
+                    <XCircle size={14} className="ml-2 text-warn" />
                   </div>
                 </div>
               );
@@ -335,27 +338,27 @@ export default function SeriesLayout({ series, onSuccess }) {
           </div>
         </div>
 
-        <div className="bg-gray-700 p-4 rounded">
-          <h3 className="text-lg font-semibold mb-3 text-red-400 flex items-center">
+        <div className="rounded-xl bg-panel-raised p-4">
+          <h3 className="mb-3 flex items-center font-medium text-warn">
             <XCircle size={18} className="mr-2" />
             <Target size={18} className="mr-2" />
             Slayer Bans ({slayerBans.length})
           </h3>
           <div className="space-y-2">
-            {slayerBans.length === 0 && <div className="text-gray-400 text-sm">No slayer bans yet</div>}
+            {slayerBans.length === 0 && <div className="text-sm text-ink-muted">No slayer bans yet</div>}
             {slayerBans.map((ban, i) => {
               const mapId = ban.map_id || ban.map;
               const mapName = (typeof mapId === 'number' && mapsById[mapId]) || ban.map || `Map ${mapId}`;
-              
+
               return (
-                <div key={ban.id || i} className="flex justify-between text-sm bg-gray-800/50 p-2 rounded">
+                <div key={ban.id || i} className="flex justify-between rounded-lg bg-panel/60 p-2 text-sm">
                   <div className="flex items-center">
-                    <Target size={16} className="mr-2 text-red-400" />
-                    <span className="font-medium">{mapName}</span>
+                    <Target size={16} className="mr-2 text-warn" />
+                    <span className="font-medium text-ink">{mapName}</span>
                   </div>
-                  <div className="flex items-center text-gray-400">
+                  <div className="flex items-center text-xs text-ink-muted">
                     <span>Team {ban.team}</span>
-                    <XCircle size={16} className="ml-2 text-red-400" />
+                    <XCircle size={14} className="ml-2 text-warn" />
                   </div>
                 </div>
               );
@@ -365,11 +368,11 @@ export default function SeriesLayout({ series, onSuccess }) {
       </div>
 
       {/* Picks grid */}
-      <div className="bg-gray-700 p-4 rounded">
+      <div className="rounded-xl bg-panel-raised p-4">
         <div className="flex items-center justify-between">
-          <h3 className="text-lg font-semibold mb-2 text-green-400">Game Layout</h3>
+          <h3 className="mb-2 font-medium text-hud">Game Layout</h3>
           {series.state === "PICK_WINDOW" && turn?.action === "PICK" && (
-            <div className="text-sm text-gray-300">Current picker: {pickerLabel}</div>
+            <div className="text-xs text-ink-muted">Current picker: {pickerLabel}</div>
           )}
         </div>
 
@@ -378,21 +381,22 @@ export default function SeriesLayout({ series, onSuccess }) {
           {picks.map((p, i) => {
             // Get proper map name from ID
             const mapName = mapsById[p.map || p.map_id] || p.map || `Map ${p.map || p.map_id}`;;
-            
+
             // FIXED: Use the corrected getGameMode function
             const modeName = getGameMode(p);
-            
+
             // FIXED: Determine if this is Slayer based on the corrected mode name
             const isSlayerMode = modeName === "Slayer" || p.kind === "SLAYER_MAP";
-            
+
             return (
-              <div key={p.id || i} className="flex justify-between bg-gray-800 p-3 rounded">
-                <div className="font-medium">
-                  {mapName}
+              <div key={p.id || i} className="flex justify-between rounded-lg bg-panel p-3">
+                <div className="flex items-center gap-2">
+                  <span className="font-mono text-xs text-ink-muted">G{i + 1}</span>
+                  <span className="text-sm font-medium text-ink">{mapName}</span>
                 </div>
-                <div className="flex items-center text-gray-300">
+                <div className="flex items-center text-ink-muted">
                   {renderModeIcon(modeName, isSlayerMode)}
-                  <span className="ml-2">{modeName}</span>
+                  <span className="ml-2 text-xs">{modeName}</span>
                 </div>
               </div>
             );
@@ -401,8 +405,8 @@ export default function SeriesLayout({ series, onSuccess }) {
 
         {/* Inline picker panel (only when it’s pick window) */}
         {series.state === "PICK_WINDOW" && turn?.action === "PICK" && (
-          <div className="p-4 bg-slate-800 rounded mt-4">
-            <div className="text-sm text-gray-300 mb-2">
+          <div className="mt-4 rounded-lg bg-panel p-4">
+            <div className="mb-2 text-xs text-ink-muted">
               Select an available map / combo for this pick:
             </div>
 
@@ -423,7 +427,7 @@ export default function SeriesLayout({ series, onSuccess }) {
               slayerMapsOverride={availableSlayerMaps}
             />
 
-            {pickError && <div className="mt-2 text-red-400 text-sm">{pickError}</div>}
+            {pickError && <div className="mt-2 text-sm text-team-red">{pickError}</div>}
           </div>
         )}
       </div>

@@ -1,13 +1,55 @@
 import { useEffect, useState, useMemo } from "react";
 import { getSeries, postUndo, postReset } from "../lib/api";
 import { processBansAndPicks } from "../lib/bans";
+import { currentPickerLabel } from "../lib/turn";
 import BanPhase from "./BanPhase";
 import PickPhase from "./PickPhase";
 import SeriesLayout from "./SeriesLayout";
 import SeriesTypeSelector from "./SeriesTypeSelector";
 import TeamAssignmentForm from "./TeamAssignmentForm";
 import exportElementToPdf from "../lib/exportPdf";
-import { Download } from "lucide-react";
+import { Download, Ban, Crosshair } from "lucide-react";
+
+const TOTAL_BAN_STEPS = 7;
+
+function TurnBeacon({ series }) {
+  const turn = series?.turn;
+  if (!turn?.team || !turn?.action) return null;
+
+  const teamColor = turn.team === "A" ? "bg-team-red" : "bg-team-blue";
+  const teamRing = turn.team === "A" ? "ring-team-red/40" : "ring-team-blue/40";
+  const teamText = turn.team === "A" ? "text-team-red" : "text-team-blue";
+  const label = currentPickerLabel(series);
+  const isBan = turn.action === "BAN";
+  const banCount = (series?.actions || []).filter((a) => a.action_type === "BAN").length;
+
+  return (
+    <div className={`hud-notch-sm flex items-center justify-between gap-4 bg-panel px-4 py-3 ring-1 ${teamRing}`}>
+      <div className="flex items-center gap-3">
+        <span className={`beacon-pulse size-2.5 rounded-full ${teamColor} ${teamText}`} />
+        <div>
+          <div className="font-display text-sm font-semibold text-ink">
+            {label || `Team ${turn.team}`}
+          </div>
+          <div className="text-xs text-ink-muted">
+            {isBan ? "eliminating a combo" : "selecting a combo"}
+          </div>
+        </div>
+      </div>
+      <div className="flex items-center gap-2">
+        {isBan ? <Ban size={16} className="text-warn" /> : <Crosshair size={16} className="text-hud" />}
+        <span className="font-display text-sm font-semibold text-ink">
+          {isBan ? "Ban" : "Pick"}
+        </span>
+        {series?.state === "BAN_PHASE" && (
+          <span className="font-mono text-xs text-ink-muted">
+            {Math.min(banCount + 1, TOTAL_BAN_STEPS)}/{TOTAL_BAN_STEPS}
+          </span>
+        )}
+      </div>
+    </div>
+  );
+}
 
 export default function SeriesManager({ seriesId, onSuccess }) {
   const [series, setSeries] = useState(null);
@@ -147,15 +189,18 @@ export default function SeriesManager({ seriesId, onSuccess }) {
     }
   };
 
-  if (error) return <div className="text-red-500">{error}</div>;
-  if (!series) return <div className="text-white">Loading series...</div>;
+  if (error) return <div className="text-team-red">{error}</div>;
+  if (!series) return <div className="text-ink-muted">Loading series&hellip;</div>;
 
   return (
-    <div className="max-w-4xl mx-auto p-6">
+    <div className="mx-auto max-w-4xl space-y-4 p-6">
       {/* Header with controls */}
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold text-white">
-          Series {seriesId} {series?.state && `(${series.state})`}
+      <div className="flex items-center justify-between">
+        <h2 className="font-display text-2xl font-bold text-ink">
+          Series {seriesId}
+          <span className="ml-2 font-mono text-sm font-normal text-ink-muted">
+            {series?.state}
+          </span>
         </h2>
 
         <div className="flex items-center gap-2">
@@ -171,9 +216,11 @@ export default function SeriesManager({ seriesId, onSuccess }) {
             </button>
           )} */}
 
-        
+
         </div>
       </div>
+
+      <TurnBeacon series={series} />
 
       {/* Render current phase */}
       {renderCurrentPhase()}

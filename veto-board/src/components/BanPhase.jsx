@@ -1,8 +1,21 @@
 import { useEffect, useState, useMemo } from "react";
+import { Ban, Flag, Castle, Skull, Crown, Bomb, Target } from "lucide-react";
 import { getGroupedCombos, postVeto } from "../lib/api";
 
 // Import the shared utilities
 import { processBansAndPicks, getMapId, getModeId, isSlayerMode } from "../lib/bans";
+
+function modeIcon(modeName) {
+  const props = { size: 16 };
+  const lower = String(modeName).toLowerCase();
+  if (lower.includes("flag")) return <Flag {...props} className="text-team-blue" />;
+  if (lower.includes("stronghold")) return <Castle {...props} className="text-hud" />;
+  if (lower.includes("king")) return <Crown {...props} className="text-warn" />;
+  if (lower.includes("bomb")) return <Bomb {...props} className="text-team-red" />;
+  if (lower.includes("oddball")) return <Skull {...props} className="text-hud" />;
+  if (lower.includes("slayer")) return <Target {...props} className="text-team-red" />;
+  return null;
+}
 
 export default function BanPhase({ series, onSuccess }) {
   const [combos, setCombos] = useState({ objective: [], slayer: [] });
@@ -69,38 +82,19 @@ export default function BanPhase({ series, onSuccess }) {
     }
   };
 
-  const handleSelectionChange = (e) => {
-    const value = e.target.value;
-    console.log("[DEBUG] Selection changed:", value);
+  const handleCardSelect = (mapId, modeId) => {
+    const mapNum = Number(mapId);
+    const modeNum = Number(modeId);
+    if (isNaN(mapNum) || isNaN(modeNum)) return;
 
-    if (value) {
-      // FIXED: Add validation for split
-      const parts = value.split(",");
-      if (parts.length !== 2) {
-        console.warn("[DEBUG] Invalid selection format:", value);
-        setSelectedMap(null);
-        setSelectedMode(null);
-        return;
-      }
-      
-      const [mapId, modeId] = parts;
-      const mapNum = Number(mapId);
-      const modeNum = Number(modeId);
-
-      if (isNaN(mapNum) || isNaN(modeNum)) {
-        console.warn("[DEBUG] Invalid map or mode ID:", { mapNum, modeNum });
-        setSelectedMap(null);
-        setSelectedMode(null);
-        return;
-      }
-
-      console.log("[DEBUG] Parsed selection:", { mapNum, modeNum });
-      setSelectedMap(mapNum);
-      setSelectedMode(modeNum);
-    } else {
+    if (selectedMap === mapNum && selectedMode === modeNum) {
+      // clicking the already-selected card deselects it
       setSelectedMap(null);
       setSelectedMode(null);
+      return;
     }
+    setSelectedMap(mapNum);
+    setSelectedMode(modeNum);
   };
 
   // Add more debugging for the kind determination
@@ -148,45 +142,60 @@ export default function BanPhase({ series, onSuccess }) {
   }, [available, isObjectiveCombo, bannedCombinations, slayerBannedMapIds, pickedCombinations]);
 
   return (
-    <div className="bg-gray-800 text-white p-4 mt-4 rounded space-y-4">
-      <h3 className="font-bold text-lg">Ban Phase</h3>
-      <div className="text-sm text-gray-300">
-        Turn:{" "}
-        <span className="font-semibold">
-          {currentTeam === "A" ? series.team_a : series.team_b}
-        </span>{" "}
-        — banning an {isObjectiveCombo ? "Objective combo" : "Slayer map"}
+    <div className="space-y-5 rounded-2xl border border-ink-muted/10 bg-panel p-5">
+      <div className="flex items-center justify-between">
+        <h3 className="flex items-center gap-2 font-display text-lg font-semibold text-ink">
+          <Ban size={18} className="text-warn" />
+          Ban Phase
+        </h3>
+        <div className="text-sm text-ink-muted">
+          {currentTeam === "A" ? series.team_a : series.team_b} eliminating an{" "}
+          {isObjectiveCombo ? "objective combo" : "slayer map"}
+        </div>
       </div>
 
-      <div className="flex flex-col gap-4">
-        <select
-          className="bg-gray-900 text-white p-2 rounded"
-          onChange={handleSelectionChange}
-          value={selectedMap && selectedMode ? `${selectedMap},${selectedMode}` : ""}
-        >
-          <option value="">
-            Select {isObjectiveCombo ? "map × objective mode" : "slayer map"} combo
-          </option>
-          {filteredAvailable.map((group) => (
-            <optgroup key={group.mode_id} label={group.mode}>
-              {group.combos.map((combo) => (
-                <option key={combo.map_id} value={`${combo.map_id},${group.mode_id}`}>
-                  {combo.map}
-                </option>
-              ))}
-            </optgroup>
-          ))}
-        </select>
+      <div className="space-y-5">
+        {filteredAvailable.length === 0 && (
+          <div className="text-sm text-ink-muted">No combos remaining to ban.</div>
+        )}
+
+        {filteredAvailable.map((group) => (
+          <div key={group.mode_id}>
+            <div className="mb-2 flex items-center gap-2 text-sm font-medium text-ink-muted">
+              {modeIcon(group.mode)}
+              {group.mode}
+            </div>
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
+              {group.combos.map((combo) => {
+                const isSelected = selectedMap === Number(combo.map_id) && selectedMode === Number(group.mode_id);
+                return (
+                  <button
+                    key={combo.map_id}
+                    type="button"
+                    onClick={() => handleCardSelect(combo.map_id, group.mode_id)}
+                    className={`rounded-lg border px-3 py-2.5 text-left text-sm transition-colors ${
+                      isSelected
+                        ? "border-warn/60 bg-warn/10 text-ink"
+                        : "border-transparent bg-panel-raised text-ink hover:bg-panel-raised/70"
+                    }`}
+                  >
+                    {combo.map}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        ))}
 
         <button
-          className="bg-red-600 hover:bg-red-700 px-4 py-2 rounded text-white disabled:opacity-50"
+          className="rounded-lg bg-warn px-4 py-2 font-medium text-void transition-colors hover:bg-warn/90 disabled:cursor-not-allowed disabled:opacity-40"
           disabled={!selectedMap || !selectedMode || loading}
           onClick={handleSubmit}
         >
-          {loading ? "Processing..." : "Confirm Ban"}
+          {loading ? "Processing…" : "Confirm Ban"}
         </button>
 
-        {error && <p className="text-red-400 text-sm">{error}</p>}
+        {error && <p className="text-sm text-team-red">{error}</p>}
       </div>
     </div>
   );

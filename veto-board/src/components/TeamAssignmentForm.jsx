@@ -34,42 +34,42 @@ export default function TeamAssignmentForm({ series, onSuccess }) {
   };
 
   return (
-    <div className="bg-gray-800 text-white p-6 rounded">
-      <h3 className="text-lg font-semibold mb-4">Assign Team Names</h3>
+    <div className="rounded-2xl border border-ink-muted/10 bg-panel p-6">
+      <h3 className="mb-4 font-display text-lg font-semibold text-ink">Assign Team Names</h3>
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="block text-sm font-medium mb-2">Team A</label>
+          <label className="mb-2 block text-sm font-medium text-team-red">Team A</label>
           <input
             type="text"
             value={teamA}
             onChange={(e) => setTeamA(e.target.value)}
-            className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white"
+            className="w-full rounded-lg border border-transparent bg-panel-raised px-3 py-2 text-ink placeholder:text-ink-muted focus:border-team-red/50"
             placeholder="Enter Team A name"
             disabled={loading}
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium mb-2">Team B</label>
+          <label className="mb-2 block text-sm font-medium text-team-blue">Team B</label>
           <input
             type="text"
             value={teamB}
             onChange={(e) => setTeamB(e.target.value)}
-            className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white"
+            className="w-full rounded-lg border border-transparent bg-panel-raised px-3 py-2 text-ink placeholder:text-ink-muted focus:border-team-blue/50"
             placeholder="Enter Team B name"
             disabled={loading}
           />
         </div>
 
-        {error && <div className="text-red-400 text-sm">{error}</div>}
+        {error && <div className="text-sm text-team-red">{error}</div>}
 
         <button
           type="submit"
           disabled={loading}
-          className="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded text-white disabled:opacity-50"
+          className="rounded-lg bg-hud px-4 py-2 font-medium text-void transition-colors hover:bg-hud/90 disabled:cursor-not-allowed disabled:opacity-40"
         >
-          {loading ? "Assigning..." : "Assign Teams"}
+          {loading ? "Assigning…" : "Assign Teams"}
         </button>
       </form>
     </div>

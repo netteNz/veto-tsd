@@ -40,27 +40,27 @@ export default function VetoPage() {
   };
 
   return (
-    <div className="p-6 max-w-4xl mx-auto">
-      <div className="flex justify-between items-center mb-6">
+    <div className="mx-auto max-w-4xl p-6">
+      <div className="mb-6 flex items-center justify-between">
         <div className="flex items-center">
-          <h1 className="text-3xl font-bold text-white">Setup New Series</h1>
-          <Link to="/help" className="ml-4 text-sm text-blue-400 hover:underline flex items-center">
+          <h1 className="font-display text-3xl font-bold text-ink">Setup New Series</h1>
+          <Link to="/help" className="ml-4 flex items-center text-sm text-hud hover:underline">
             <HelpCircle size={14} className="mr-1" />
             <span>How to Use</span>
           </Link>
         </div>
 
-        <div>
+        <div className="flex gap-2">
           <button
             onClick={handleNewSeries}
-            className="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded text-white mr-2"
+            className="rounded-lg bg-hud px-4 py-2 text-sm font-medium text-void transition-colors hover:bg-hud/90 disabled:cursor-not-allowed disabled:opacity-40"
             disabled={loading}
           >
-            {loading ? "Creating..." : "New Series"}
+            {loading ? "Creating…" : "New Series"}
           </button>
           <button
             onClick={handleResetToCreate}
-            className="bg-gray-700 hover:bg-gray-800 px-3 py-1 rounded text-white"
+            className="rounded-lg px-3 py-2 text-sm text-ink-muted transition-colors hover:bg-panel hover:text-ink"
           >
             Reset
           </button>
@@ -72,8 +72,8 @@ export default function VetoPage() {
       {seriesId ? (
         <SeriesManager seriesId={seriesId} onSuccess={() => {/* refresh if needed */}} />
       ) : (
-        <div className="bg-gray-800 rounded-lg p-6">
-          <p className="text-gray-300 mb-4">
+        <div className="rounded-2xl bg-panel p-6">
+          <p className="text-sm text-ink-muted">
             Click "New Series" to create a series. The team-assignment form is shown inside the Series Manager.
           </p>
         </div>

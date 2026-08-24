@@ -23,16 +23,16 @@ export default function SeriesTypeSelector({ series, onSuccess }) {
   };
 
   return (
-    <div className="bg-gray-800 text-white p-6 rounded">
-      <h3 className="text-lg font-semibold mb-4">Select Series Type</h3>
-      
+    <div className="rounded-2xl border border-ink-muted/10 bg-panel p-6">
+      <h3 className="mb-4 font-display text-lg font-semibold text-ink">Select Series Type</h3>
+
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="block text-sm font-medium mb-2">Series Format</label>
+          <label className="mb-2 block text-sm font-medium text-ink-muted">Series Format</label>
           <select
             value={seriesType}
             onChange={(e) => setSeriesType(e.target.value)}
-            className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white"
+            className="w-full rounded-lg border border-transparent bg-panel-raised px-3 py-2 text-ink focus:border-hud/50"
             disabled={loading}
           >
             <option value="Bo3">Best of 3</option>
@@ -42,20 +42,25 @@ export default function SeriesTypeSelector({ series, onSuccess }) {
         </div>
 
         {error && (
-          <div className="text-red-400 text-sm">{error}</div>
+          <div className="text-sm text-team-red">{error}</div>
         )}
 
         <button
           type="submit"
           disabled={loading}
-          className="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded text-white disabled:opacity-50"
+          className="rounded-lg bg-hud px-4 py-2 font-medium text-void transition-colors hover:bg-hud/90 disabled:cursor-not-allowed disabled:opacity-40"
         >
-          {loading ? "Confirming..." : "Start Veto Process"}
+          {loading ? "Confirming…" : "Start Veto Process"}
         </button>
       </form>
 
-      <div className="mt-4 text-sm text-gray-400">
-        <p>Teams: <span className="text-white">{series.team_a} vs {series.team_b}</span></p>
+      <div className="mt-4 text-sm text-ink-muted">
+        <p>
+          Teams:{" "}
+          <span className="text-team-red">{series.team_a}</span>
+          {" "}vs{" "}
+          <span className="text-team-blue">{series.team_b}</span>
+        </p>
       </div>
     </div>
   );

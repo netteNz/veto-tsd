@@ -7,20 +7,25 @@ export default {
   ],
   theme: {
     extend: {
+      // Source of truth is the @theme block in src/index.css (Tailwind v4
+      // CSS-first config). Mirrored here for editor tooling only.
       colors: {
-        sidebar: '#343541',
-        panelBg: '#202123',
-        mainBg: '#13131A',
-        accent: '#10A37F',
-        // use 'ink' as the color family to avoid dot notation
+        void: '#0B0E14',
+        panel: '#12161F',
+        panelRaised: '#1A2030',
+        hud: '#4FD8E8',
+        teamRed: '#E23744',
+        teamBlue: '#3B6FE0',
+        warn: '#F5A623',
         ink: {
-          light: '#ECECF1',
-          muted: '#8E8EA0',
+          DEFAULT: '#E7ECF2',
+          muted: '#6C7889',
         },
       },
       fontFamily: {
-        // Changed from Inter to Lato
-        sans: ['Lato', 'system-ui', 'sans-serif'],
+        display: ['Rajdhani', 'system-ui', 'sans-serif'],
+        sans: ['IBM Plex Sans', 'system-ui', 'sans-serif'],
+        mono: ['IBM Plex Mono', 'ui-monospace', 'monospace'],
       },
       borderRadius: {
         lg: '0.75rem',

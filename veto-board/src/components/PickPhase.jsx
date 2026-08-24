@@ -54,6 +54,20 @@ export default function PickPhase({ series, onSuccess }) {
     return processBansAndPicks(series?.actions || []);
   }, [series?.actions]);
 
+  // Look up which team made a given pick, straight from the action log
+  // (the banned/picked Sets from processBansAndPicks only track membership, not team)
+  const pickTeamByMapMode = useMemo(() => {
+    const lookup = new Map();
+    for (const a of series?.actions || []) {
+      if (a.action_type !== "PICK") continue;
+      const mapId = Number(getMapId(a));
+      const modeId = Number(getModeId(a));
+      if (mapId) lookup.set(`slayer:${mapId}`, a.team);
+      if (mapId && modeId) lookup.set(`obj:${mapId}:${modeId}`, a.team);
+    }
+    return lookup;
+  }, [series?.actions]);
+
   // Process all slayer maps, including banned ones (for display)
   const allSlayerMaps = useMemo(() => {
     if (!maps.length) return [];
@@ -72,10 +86,11 @@ export default function PickPhase({ series, onSuccess }) {
           name: m.name || m.map || `Map ${mapId}`,
           isBanned,
           isPicked,
+          pickedByTeam: isPicked ? pickTeamByMapMode.get(`slayer:${mapId}`) : null,
           disabled: isBanned || isPicked
         };
       });
-  }, [maps, slayerBannedMapIds, slayerPickedMapIds]);
+  }, [maps, slayerBannedMapIds, slayerPickedMapIds, pickTeamByMapMode]);
 
   // Available Slayer maps (for selection - filtered)
   const availableSlayerMaps = useMemo(() => {
@@ -97,15 +112,16 @@ export default function PickPhase({ series, onSuccess }) {
           const comboKey = `${mapId}:${modeId}`;
           const isBanned = bannedCombinations.has(comboKey);
           const isPicked = pickedCombinations.has(comboKey); // CHANGED: Use exact combo check
-          return { ...combo, isBanned, isPicked, disabled: isBanned || isPicked };
+          const pickedByTeam = isPicked ? pickTeamByMapMode.get(`obj:${comboKey}`) : null;
+          return { ...combo, isBanned, isPicked, pickedByTeam, disabled: isBanned || isPicked };
         });
-        return { 
-          ...modeGroup, 
+        return {
+          ...modeGroup,
           mode: getModeName(modeGroup) || modeGroup.mode,
-          combos: processedCombos 
+          combos: processedCombos
         };
       });
-  }, [groupedCombos, bannedCombinations, pickedCombinations]); // CHANGED: Updated dependencies
+  }, [groupedCombos, bannedCombinations, pickedCombinations, pickTeamByMapMode]); // CHANGED: Updated dependencies
 
   // Available objective combos (for selection)
   const availableObjectiveCombos = useMemo(() => {
@@ -189,94 +205,105 @@ export default function PickPhase({ series, onSuccess }) {
 
   // Function to render mode icons
   const renderModeIcon = (modeName) => {
-    const iconProps = { 
-      size: 18, 
-      className: "transition-transform hover:scale-110" 
+    const iconProps = {
+      size: 18,
+      className: "transition-transform hover:scale-110"
     };
-    
+
     const lowerModeName = String(modeName).toLowerCase();
-    
+
     if (lowerModeName.includes('flag')) {
-      return <Flag {...iconProps} className={`${iconProps.className} text-blue-400`} />;
+      return <Flag {...iconProps} className={`${iconProps.className} text-team-blue`} />;
     } else if (lowerModeName.includes('stronghold')) {
-      return <Castle {...iconProps} className={`${iconProps.className} text-purple-400`} />;
+      return <Castle {...iconProps} className={`${iconProps.className} text-hud`} />;
     } else if (lowerModeName.includes('slayer')) {
-      // CHANGED: Use Target icon for Slayer instead of Skull
-      return <Target {...iconProps} className={`${iconProps.className} text-red-400`} />;
+      return <Target {...iconProps} className={`${iconProps.className} text-team-red`} />;
     } else if (lowerModeName.includes('king')) {
-      return <Crown {...iconProps} className={`${iconProps.className} text-yellow-400`} />;
+      return <Crown {...iconProps} className={`${iconProps.className} text-warn`} />;
     } else if (lowerModeName.includes('bomb')) {
-      return <Bomb {...iconProps} className={`${iconProps.className} text-orange-400`} />;
+      return <Bomb {...iconProps} className={`${iconProps.className} text-team-red`} />;
     } else if (lowerModeName.includes('oddball')) {
-      // CHANGED: Use Skull icon for Oddball instead of Target
-      return <Skull {...iconProps} className={`${iconProps.className} text-green-400`} />;
+      return <Skull {...iconProps} className={`${iconProps.className} text-hud`} />;
     }
-    
+
     // Default icon if no match
     return <div className="w-[18px] h-[18px]" />;
   };
 
+  // Corner-bracket + reticle-strike overlay shown on eliminated combos
+  const TargetLockOverlay = () => (
+    <>
+      <span className="lock-bracket pointer-events-none absolute left-1 top-1 h-2 w-2 border-l border-t border-warn" />
+      <span className="lock-bracket pointer-events-none absolute right-1 top-1 h-2 w-2 border-r border-t border-warn" />
+      <span className="lock-bracket pointer-events-none absolute bottom-1 left-1 h-2 w-2 border-b border-l border-warn" />
+      <span className="lock-bracket pointer-events-none absolute bottom-1 right-1 h-2 w-2 border-b border-r border-warn" />
+      <span className="lock-strike-line pointer-events-none absolute left-0 top-1/2 h-px w-full origin-left -translate-y-1/2 bg-warn/70" />
+    </>
+  );
+
   return (
-    <div className="bg-gray-800 text-white p-6 rounded space-y-4">
-      <div className="flex justify-between items-center">
-        <h3 className="text-lg font-semibold text-blue-400">
+    <div className="space-y-5 rounded-2xl border border-ink-muted/10 bg-panel p-6">
+      <div className="flex items-center justify-between">
+        <h3 className="flex items-center gap-2 font-display text-lg font-semibold text-hud">
+          <Target size={18} />
           Pick Phase {isObjective ? "— Objective" : isSlayer ? "— Slayer" : ""}
         </h3>
-        <div className="text-sm text-gray-300">{pickerLabel} to pick</div>
+        <div className="text-sm text-ink-muted">{pickerLabel} to pick</div>
       </div>
 
       {!dataLoaded ? (
-        <div className="text-center py-8">
-          <div className="animate-pulse">Loading maps and game modes...</div>
+        <div className="py-8 text-center text-sm text-ink-muted">
+          <div className="animate-pulse">Loading maps and game modes&hellip;</div>
         </div>
       ) : (
         <>
           <div className="mb-3">
-            <p className="text-sm text-gray-300">
-              Maps shown in <span className="text-red-500 font-semibold">red</span> have been vetoed.
-              <span className="text-green-500 font-semibold ml-1">Green</span> items have been picked.
+            <p className="text-xs text-ink-muted">
+              <span className="font-medium text-warn">Amber</span> = eliminated ·{" "}
+              <span className="font-medium text-team-red">red</span> / <span className="font-medium text-team-blue">blue</span> = picked, by team
             </p>
           </div>
 
           {/* Slayer Maps Display */}
           {isSlayer && (
-            <div className="space-y-4">
-              <p className="text-gray-300">Select a Slayer map:</p>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                {allSlayerMaps.map(map => (
-                  <button
-                    key={map.id}
-                    onClick={() => !map.disabled && handlePick({ mapId: map.id })}
-                    disabled={map.disabled || loading}
-                    className={`
-                      p-3 rounded border transition-colors
-                      ${map.isBanned
-                        ? 'border-red-800 bg-red-900/30 text-red-400'
-                        : map.isPicked
-                          ? 'border-green-800 bg-green-900/30 text-green-400'
-                          : 'border-blue-800 bg-blue-900/30 text-white hover:bg-blue-800/40'
-                      }
-                      ${map.disabled ? 'cursor-not-allowed opacity-70' : 'cursor-pointer'}
-                    `}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="font-medium">{map.name}</div>
-                      {/* Only show one status label - ban takes precedence over pick */}
-                      {map.isBanned ? (
-                        <span className="px-2 py-1 text-xs rounded bg-red-800/50 text-red-300">
-                          Vetoed
-                        </span>
-                      ) : map.isPicked ? (
-                        <span className="px-2 py-1 text-xs rounded bg-green-800/50 text-green-300">
-                          Picked
-                        </span>
-                      ) : null}
-                    </div>
-                  </button>
-                ))}
-                
+            <div className="space-y-3">
+              <p className="text-sm font-medium text-ink-muted">Select a Slayer map:</p>
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                {allSlayerMaps.map(map => {
+                  const isTeamA = map.pickedByTeam === "A";
+                  return (
+                    <button
+                      key={map.id}
+                      onClick={() => !map.disabled && handlePick({ mapId: map.id })}
+                      disabled={map.disabled || loading}
+                      className={`
+                        relative overflow-hidden rounded-lg border p-3 transition-colors
+                        ${map.isBanned
+                          ? 'target-locked border-transparent bg-warn/10 text-ink-muted'
+                          : map.isPicked
+                            ? isTeamA
+                              ? 'border-transparent bg-team-red/10 text-ink'
+                              : 'border-transparent bg-team-blue/10 text-ink'
+                            : 'border-transparent bg-panel-raised text-ink hover:bg-panel-raised/70'
+                        }
+                        ${map.disabled ? 'cursor-not-allowed' : 'cursor-pointer'}
+                      `}
+                    >
+                      {map.isBanned && <TargetLockOverlay />}
+                      <div className="flex items-center justify-between">
+                        <div className="font-medium">{map.name}</div>
+                        {map.isBanned ? (
+                          <span className="text-xs text-warn">Eliminated</span>
+                        ) : map.isPicked ? (
+                          <span className={`text-xs ${isTeamA ? 'text-team-red' : 'text-team-blue'}`}>Picked</span>
+                        ) : null}
+                      </div>
+                    </button>
+                  );
+                })}
+
                 {allSlayerMaps.length === 0 && (
-                  <div className="col-span-4 text-center text-gray-400">
+                  <div className="col-span-4 text-center text-sm text-ink-muted">
                     No Slayer maps available
                   </div>
                 )}
@@ -287,46 +314,46 @@ export default function PickPhase({ series, onSuccess }) {
           {/* Objective Modes Display */}
           {isObjective && processedObjectiveCombos.length > 0 && (
             <div className="space-y-4">
-              <p className="text-gray-300">Select an objective mode/map combination:</p>
+              <p className="text-sm font-medium text-ink-muted">Select an objective mode/map combination:</p>
               {processedObjectiveCombos.map((modeGroup) => (
-                <div key={modeGroup.mode_id} className="bg-gray-700 p-4 rounded">
-                  <h4 className="font-semibold text-green-400 mb-3 flex items-center">
+                <div key={modeGroup.mode_id} className="rounded-xl bg-panel-raised p-4">
+                  <h4 className="mb-3 flex items-center font-medium text-hud">
                     {renderModeIcon(modeGroup.mode)}
                     <span className="ml-2">{modeGroup.mode}</span>
                   </h4>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-                    {modeGroup.combos.map(combo => (
-                      <button
-                        key={`${modeGroup.mode_id}_${combo.map_id}`}
-                        onClick={() => !combo.disabled && handlePick({ mapId: combo.map_id, modeId: modeGroup.mode_id })}
-                        disabled={combo.disabled || loading}
-                        className={`
-                          p-3 rounded border 
-                          ${combo.isBanned 
-                            ? 'border-red-800 bg-red-900/30 text-red-400' 
-                            : combo.isPicked 
-                              ? 'border-green-800 bg-green-900/30 text-green-400'
-                              : 'border-blue-800 bg-blue-900/30 text-white hover:bg-blue-800/40'
-                          }
-                          transition-colors
-                          ${combo.disabled ? 'cursor-not-allowed opacity-70' : 'cursor-pointer'}
-                        `}
-                      >
-                        <div className="flex items-center justify-between">
-                          <div className="font-medium">{combo.map}</div>
-                          {combo.isBanned && (
-                            <span className="px-2 py-1 text-xs rounded bg-red-800/50 text-red-300">
-                              Vetoed
-                            </span>
-                          )}
-                          {combo.isPicked && (
-                            <span className="px-2 py-1 text-xs rounded bg-green-800/50 text-green-300">
-                              Picked
-                            </span>
-                          )}
-                        </div>
-                      </button>
-                    ))}
+                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                    {modeGroup.combos.map(combo => {
+                      const isTeamA = combo.pickedByTeam === "A";
+                      return (
+                        <button
+                          key={`${modeGroup.mode_id}_${combo.map_id}`}
+                          onClick={() => !combo.disabled && handlePick({ mapId: combo.map_id, modeId: modeGroup.mode_id })}
+                          disabled={combo.disabled || loading}
+                          className={`
+                            relative overflow-hidden rounded-lg border p-3
+                            ${combo.isBanned
+                              ? 'target-locked border-transparent bg-warn/10 text-ink-muted'
+                              : combo.isPicked
+                                ? isTeamA
+                                  ? 'border-transparent bg-team-red/10 text-ink'
+                                  : 'border-transparent bg-team-blue/10 text-ink'
+                                : 'border-transparent bg-panel text-ink hover:bg-panel/70'
+                            }
+                            transition-colors
+                            ${combo.disabled ? 'cursor-not-allowed' : 'cursor-pointer'}
+                          `}
+                        >
+                          {combo.isBanned && <TargetLockOverlay />}
+                          <div className="flex items-center justify-between">
+                            <div className="font-medium">{combo.map}</div>
+                            {combo.isBanned && <span className="text-xs text-warn">Eliminated</span>}
+                            {combo.isPicked && (
+                              <span className={`text-xs ${isTeamA ? 'text-team-red' : 'text-team-blue'}`}>Picked</span>
+                            )}
+                          </div>
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
               ))}
@@ -335,84 +362,84 @@ export default function PickPhase({ series, onSuccess }) {
 
           {/* Collapsible Available Selections */}
           {turn?.action === "PICK" && (
-            <div className="mt-8 border-t border-gray-700 pt-6">
-              <div 
-                className="flex items-center justify-between cursor-pointer" 
+            <div className="mt-8 border-t border-ink-muted/10 pt-6">
+              <div
+                className="flex cursor-pointer items-center justify-between"
                 onClick={() => toggleSection('availableSelections')}
               >
-                <h4 className="text-lg font-semibold text-blue-400 mb-0">Available Selections</h4>
+                <h4 className="mb-0 font-medium text-hud">Available Selections</h4>
                 {expandedSections.availableSelections ? (
-                  <ChevronUp className="text-blue-400 h-5 w-5" />
+                  <ChevronUp className="h-5 w-5 text-hud" />
                 ) : (
-                  <ChevronDown className="text-blue-400 h-5 w-5" />
+                  <ChevronDown className="h-5 w-5 text-hud" />
                 )}
               </div>
-              
+
               {expandedSections.availableSelections && (
                 <div className="mt-4 transition-all duration-300">
                   {isSlayer && (
-                    <div className="bg-gray-700/50 p-4 rounded">
-                      <p className="mb-3 font-medium text-blue-400">Slayer Maps</p>
-                      <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 gap-2">
+                    <div className="rounded-xl bg-panel-raised p-4">
+                      <p className="mb-3 text-sm font-medium text-hud">Slayer Maps</p>
+                      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 md:grid-cols-5">
                         {availableSlayerMaps.length > 0 ? (
                           availableSlayerMaps.map(map => (
                             <button
                               key={map.id}
                               onClick={() => handlePick({ mapId: map.id })}
                               disabled={loading}
-                              className="px-3 py-2 bg-blue-700 hover:bg-blue-600 text-white rounded text-sm transition-colors"
+                              className="rounded-lg bg-hud/10 px-3 py-2 text-sm text-ink transition-colors hover:bg-hud/20"
                             >
                               {map.name}
                             </button>
                           ))
                         ) : (
-                          <div className="col-span-full text-gray-400">
+                          <div className="col-span-full text-sm text-ink-muted">
                             No available Slayer maps to pick
                           </div>
                         )}
                       </div>
                     </div>
                   )}
-                  
+
                   {isObjective && (
-                    <div className="bg-gray-700/50 p-4 rounded mt-4">
-                      <div 
-                        className="flex items-center justify-between cursor-pointer" 
+                    <div className="mt-4 rounded-xl bg-panel-raised p-4">
+                      <div
+                        className="flex cursor-pointer items-center justify-between"
                         onClick={(e) => {
                           e.stopPropagation(); // Prevent parent handler from triggering
                           toggleSection('objectiveModes');
                         }}
                       >
-                        <p className="mb-0 font-medium text-green-400 flex items-center">
-                          <Target size={16} className="mr-2 text-green-400" />
+                        <p className="mb-0 flex items-center text-sm font-medium text-hud">
+                          <Target size={16} className="mr-2" />
                           <span>Objective Modes</span>
                         </p>
                         {expandedSections.objectiveModes ? (
-                          <ChevronUp className="text-green-400 h-4 w-4" />
+                          <ChevronUp className="h-4 w-4 text-hud" />
                         ) : (
-                          <ChevronDown className="text-green-400 h-4 w-4" />
+                          <ChevronDown className="h-4 w-4 text-hud" />
                         )}
                       </div>
-                      
+
                       {expandedSections.objectiveModes && (
-                        <div className="grid grid-cols-1 gap-4 mt-3">
+                        <div className="mt-3 grid grid-cols-1 gap-4">
                           {availableObjectiveCombos.length > 0 ? (
                             availableObjectiveCombos.map(modeGroup => (
-                              <div key={modeGroup.mode_id} className="bg-gray-800/50 p-3 rounded">
-                                <h5 className="font-medium text-green-300 mb-2 flex items-center">
+                              <div key={modeGroup.mode_id} className="rounded-lg bg-panel p-3">
+                                <h5 className="mb-2 flex items-center text-sm font-medium text-ink-muted">
                                   {renderModeIcon(modeGroup.mode)}
                                   <span className="ml-2">{modeGroup.mode}</span>
                                 </h5>
-                                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+                                <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4">
                                   {modeGroup.combos.map(combo => (
                                     <button
                                       key={combo.map_id}
                                       onClick={() => handlePick({ mapId: combo.map_id, modeId: modeGroup.mode_id })}
                                       disabled={loading}
-                                      className="px-3 py-2 bg-green-700 hover:bg-green-600 text-white rounded text-sm transition-colors group"
+                                      className="group rounded-lg bg-hud/10 px-3 py-2 text-sm text-ink transition-colors hover:bg-hud/20"
                                     >
                                       <div className="flex items-center justify-center">
-                                        <Target size={14} className="mr-1 text-green-300 transition-transform group-hover:scale-110" />
+                                        <Target size={14} className="mr-1 text-hud transition-transform group-hover:scale-110" />
                                         <span>{combo.map}</span>
                                       </div>
                                     </button>
@@ -421,7 +448,7 @@ export default function PickPhase({ series, onSuccess }) {
                               </div>
                             ))
                           ) : (
-                            <div className="text-center text-gray-400">
+                            <div className="text-center text-sm text-ink-muted">
                               No available objective combinations to pick
                             </div>
                           )}
@@ -436,10 +463,10 @@ export default function PickPhase({ series, onSuccess }) {
         </>
       )}
 
-      {loading && <div className="text-center text-gray-400">Making pick…</div>}
-      
+      {loading && <div className="text-center text-sm text-ink-muted">Making pick&hellip;</div>}
+
       {error && (
-        <div className="bg-red-900 border border-red-600 text-red-200 px-4 py-3 rounded mt-4">
+        <div className="mt-4 rounded-lg bg-team-red/10 px-4 py-3 text-sm text-team-red">
           {error}
         </div>
       )}

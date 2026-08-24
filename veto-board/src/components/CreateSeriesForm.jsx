@@ -22,12 +22,12 @@ export default function CreateSeriesForm({ onSubmit, loading = false }) {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="bg-gray-800 p-4 rounded space-y-4">
-      <h2 className="text-white font-bold text-xl">Start a New Series</h2>
+    <form onSubmit={handleSubmit} className="space-y-4 rounded-2xl border border-ink-muted/10 bg-panel p-4">
+      <h2 className="font-display text-xl font-bold text-ink">Start a New Series</h2>
       <div className="flex flex-col gap-2">
         <input
           type="text"
-          className="p-2 rounded bg-gray-900 text-white"
+          className="rounded-lg border border-transparent bg-panel-raised p-2 text-ink placeholder:text-ink-muted focus:border-team-red/50"
           placeholder="Team Alpha"
           value={teamA}
           onChange={(e) => setTeamA(e.target.value)}
@@ -35,7 +35,7 @@ export default function CreateSeriesForm({ onSubmit, loading = false }) {
         />
         <input
           type="text"
-          className="p-2 rounded bg-gray-900 text-white"
+          className="rounded-lg border border-transparent bg-panel-raised p-2 text-ink placeholder:text-ink-muted focus:border-team-blue/50"
           placeholder="Team Beta"
           value={teamB}
           onChange={(e) => setTeamB(e.target.value)}
@@ -45,11 +45,11 @@ export default function CreateSeriesForm({ onSubmit, loading = false }) {
       <button
         type="submit"
         disabled={loading}
-        className="bg-green-500 px-4 py-2 rounded text-white hover:bg-green-600 disabled:opacity-60"
+        className="rounded-lg bg-hud px-4 py-2 font-medium text-void transition-colors hover:bg-hud/90 disabled:cursor-not-allowed disabled:opacity-40"
       >
-        {loading ? "Creating..." : "Create Series"}
+        {loading ? "Creating…" : "Create Series"}
       </button>
-      {error && <p className="text-red-400 text-sm">{error}</p>}
+      {error && <p className="text-sm text-team-red">{error}</p>}
     </form>
   );
 }

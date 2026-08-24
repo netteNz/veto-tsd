@@ -1,13 +1,12 @@
 import { useState } from "react";
 import { Outlet, NavLink, Link } from "react-router-dom"; // Add Link import
-import { 
-  FlaskConical,
-  Swords, 
-  ChevronLeft, 
-  ChevronRight, 
-  Dices, 
+import {
+  Crosshair,
+  Swords,
+  ChevronLeft,
+  ChevronRight,
+  Dices,
   HelpCircle,
-  Zap
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -33,7 +32,7 @@ function classNames(...parts) {
 
 export default function AppLayout() {
   return (
-    <div className="min-h-screen w-full bg-neutral-950 text-white">
+    <div className="min-h-screen w-full bg-void text-ink">
       <div className="flex h-screen">
         <Sidebar />
         <main className="flex-1 overflow-y-auto">
@@ -50,16 +49,20 @@ export function Sidebar() {
   return (
     <aside
       className={classNames(
-        "h-full border-r border-neutral-800 bg-gradient-to-b from-neutral-900 to-neutral-950 backdrop-blur",
+        "relative h-full border-r border-ink-muted/20 bg-panel",
         open ? "w-64" : "w-20",
         "transition-all duration-300 ease-in-out shadow-xl"
       )}
     >
-      {/* Top: App mark + store name - Now wrapped in Link */}
+      {/* Top: App mark + brand name */}
       <Link to="/" className="block hover:opacity-80 transition-opacity">
         <div className="flex items-center gap-3 px-4 py-5">
-          <div className="grid place-items-center rounded-xl border border-blue-500 p-2.5 shadow-sm shadow-blue-500/10">
-            <FlaskConical className="size-5 text-blue-400" />
+          <div className="relative grid size-10 shrink-0 place-items-center">
+            <span className="pointer-events-none absolute left-0 top-0 h-2.5 w-2.5 border-l-2 border-t-2 border-hud" />
+            <span className="pointer-events-none absolute right-0 top-0 h-2.5 w-2.5 border-r-2 border-t-2 border-hud" />
+            <span className="pointer-events-none absolute bottom-0 left-0 h-2.5 w-2.5 border-b-2 border-l-2 border-hud" />
+            <span className="pointer-events-none absolute bottom-0 right-0 h-2.5 w-2.5 border-b-2 border-r-2 border-hud" />
+            <Crosshair className="size-5 text-hud" />
           </div>
           <AnimatePresence initial={false}>
             {open && (
@@ -70,10 +73,12 @@ export function Sidebar() {
                 exit={{ opacity: 0, x: -4 }}
                 className="truncate"
               >
-                <div className="text-sm font-bold text-white leading-tight tracking-wide flex items-center">
-                  TSD Veto <Zap className="h-3 w-3 ml-1 text-blue-400" />
+                <div className="font-display text-base font-semibold uppercase leading-tight tracking-wider text-ink">
+                  TSD Veto
                 </div>
-                <div className="text-xs text-blue-400 leading-tight font-medium">Created by netteNz</div>
+                <div className="font-mono text-[11px] leading-tight text-ink-muted">
+                  Mission Control &middot; netteNz
+                </div>
               </motion.div>
             )}
           </AnimatePresence>
@@ -81,7 +86,7 @@ export function Sidebar() {
       </Link>
 
       {/* Divider */}
-      <div className="mx-4 border-t border-neutral-800/70" />
+      <div className="mx-4 border-t border-ink-muted/15" />
 
       {/* Nav */}
       <nav className="mt-5 flex flex-col gap-1.5 px-2">
@@ -92,17 +97,17 @@ export function Sidebar() {
             title={!open ? label : undefined}
             className={({ isActive }) =>
               classNames(
-                "group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all",
-                "hover:bg-neutral-800 hover:shadow-md",
+                "group flex items-center gap-3 px-3 py-2.5 font-sans text-sm font-medium transition-all",
+                "hover:bg-panel-raised",
                 isActive
-                  ? "bg-blue-600/10 text-white ring-1 ring-blue-500/30 shadow-sm"
-                  : "text-white/80 hover:text-white"
+                  ? "bg-hud/10 text-ink ring-1 ring-hud/40"
+                  : "text-ink-muted hover:text-ink"
               )
             }
           >
             <Icon className={classNames(
-              "size-5 shrink-0", 
-              "group-hover:text-blue-400",
+              "size-5 shrink-0",
+              "group-hover:text-hud",
               "transition-colors duration-200"
             )} />
             <AnimatePresence initial={false}>
@@ -126,7 +131,7 @@ export function Sidebar() {
       <div className="absolute inset-x-0 bottom-0 px-2 pb-3">
         <button
           onClick={() => setOpen((v) => !v)}
-          className="w-full rounded-xl border border-blue-500/20 bg-blue-500/5 px-3 py-2.5 text-xs text-white hover:bg-blue-600/10 transition-colors shadow-sm"
+          className="w-full border border-hud/20 bg-hud/5 px-3 py-2.5 text-xs text-ink transition-colors hover:bg-hud/10"
         >
           <div className="flex items-center justify-center gap-2">
             {open ? <ChevronLeft className="size-4" /> : <ChevronRight className="size-4" />}
@@ -153,13 +158,12 @@ export function Sidebar() {
 /** Optional helper: page shell for quick testing without wiring react-router */
 export function DemoPageShell() {
   return (
-    <div className="flex h-screen bg-neutral-950 text-neutral-100">
+    <div className="flex h-screen bg-void text-ink">
       <Sidebar />
       <section className="flex-1 p-8">
-        <h1 className="text-2xl font-semibold">Veto</h1>
-        <p className="mt-2 max-w-prose text-neutral-300">
-          Your content goes here. The sidebar is built to match a modern admin panel
-          with a dark, high-contrast look inspired by the screenshot.
+        <h1 className="font-display text-2xl font-semibold">Veto</h1>
+        <p className="mt-2 max-w-prose text-ink-muted">
+          Your content goes here.
         </p>
       </section>
     </div>
